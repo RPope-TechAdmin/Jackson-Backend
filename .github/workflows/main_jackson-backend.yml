@@ -78,6 +78,6 @@ jobs:
         id: deploy-to-function
         with:
           app-name: 'Jackson-Backend'
-          slot-name: 'Production'
+          slot-name: 'jackson'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           
