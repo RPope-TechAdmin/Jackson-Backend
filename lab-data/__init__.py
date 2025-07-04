@@ -27,14 +27,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             tables = page.extract_tables()
             for table in tables:
                 for row in table:
-                    if not row or len(row) < 2:
+                    if not row or len(row) < 2 or row[0] is None:
                         continue
+
                     name = row[0].strip()
                     numeric_count = sum(
                         1 for cell in row[1:] if cell and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
                     )
                     sql = f"INSERT INTO your_table (name, count) VALUES ('{name}', {numeric_count});"
                     sql_queries.append(sql)
+
 
     # Optionally clean up
     os.remove(tmp_path)
