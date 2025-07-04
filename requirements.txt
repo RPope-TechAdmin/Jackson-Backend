@@ -1,0 +1,8 @@
+azure-functions
+azure-identity
+pdfplumber
+sqlalchemy
+pyodbc
+python-tds
+requests_toolbelt
+requests
