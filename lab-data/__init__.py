@@ -26,13 +26,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         for page in pdf.pages:
             tables = page.extract_tables()
             for table in tables:
+                if not table:
+                    continue
                 for row in table:
-                    if not row or len(row) < 2 or row[0] is None:
-                        continue
+                    logging.info(f"Processing Row: {row}")
+                    if not row or len(row) < 2:
+                        continue  # Skip blank or incomplete rows
 
-                    name = row[0].strip()
+                    raw_name = row[0]
+                    if raw_name is None:
+                        continue  # Skip rows where name is missing
+
+                    name = raw_name.strip()
                     numeric_count = sum(
-                        1 for cell in row[1:] if cell and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
+                        1 for cell in row[1:]
+                        if cell and isinstance(cell, str) and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
                     )
                     sql = f"INSERT INTO your_table (name, count) VALUES ('{name}', {numeric_count});"
                     sql_queries.append(sql)
