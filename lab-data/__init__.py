@@ -34,7 +34,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         for part in parser.parts():
             logging.info(f"Part received: name={part.name}, filename={part.filename}")
             if part.name == "file" and part.filename and part.filename.endswith(".pdf"):
-                file_content = part.file.read()
+                if hasattr(part.file, 'read'):
+                        file_content = part.file.read()
+                elif isinstance(file_content, BytesIO):
+                    file_content = file_content.read()
+                else:
+                    raise ValueError(f"Unrecognized file format: {type(part.file)}")
 
         if not file_content:
             return func.HttpResponse(
@@ -45,36 +50,43 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         logging.info(f"Type of file_content: {type(file_content)}")
         logging.info(f"First 100 bytes: {file_content[:100]}")
-        with pdfplumber.open(BytesIO(file_content)) as pdf:
-            for page in pdf.pages:
-                tables = page.extract_tables()
-                for table in tables:
-                    if not table:
-                        continue
-                    for row in table:
-                        if not row or len(row) < 2:
+        try:
+            with pdfplumber.open(BytesIO(file_content)) as pdf:
+                for page in pdf.pages:
+                    tables = page.extract_tables()
+                    for table in tables:
+                        if not table:
                             continue
-                        raw_name = row[0]
-                        if raw_name is None:
-                            continue
-                        name = raw_name.strip()
-                        numeric_count = sum(
-                            1 for cell in row[1:]
-                            if cell and isinstance(cell, str) and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
-                        )
-                        sql = f"INSERT INTO your_table (name, count) VALUES ('{name}', {numeric_count});"
-                        sql_queries.append(sql)
+                        for row in table:
+                            if not row or len(row) < 2:
+                                continue
+                            raw_name = row[0]
+                            if raw_name is None:
+                                continue
+                            name = raw_name.strip()
+                            numeric_count = sum(
+                                1 for cell in row[1:]
+                                if cell and isinstance(cell, str) and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
+                            )
+                            sql = f"INSERT INTO your_table (name, count) VALUES ('{name}', {numeric_count});"
+                            sql_queries.append(sql)
 
-        return func.HttpResponse(
-            json.dumps({"queries": sql_queries}),
-            mimetype="application/json",
-            status_code=200
-        )
-
+            return func.HttpResponse(
+                json.dumps({"queries": sql_queries}),
+                mimetype="application/json",
+                status_code=200
+            )
+        except Exception as e:
+            logging.exception("Unhandled exception in function")
+            return func.HttpResponse(
+                json.dumps({"error": "Internal server error", "details": str(e)}),
+                mimetype="application/json",
+                status_code=500
+            )
     except Exception as e:
-        logging.exception("Unhandled exception in function")
-        return func.HttpResponse(
-            json.dumps({"error": "Internal server error", "details": str(e)}),
-            mimetype="application/json",
-            status_code=500
-        )
+            logging.exception("Unhandled exception in function")
+            return func.HttpResponse(
+                json.dumps({"error": "Internal server error", "details": str(e)}),
+                mimetype="application/json",
+                status_code=500
+            )
