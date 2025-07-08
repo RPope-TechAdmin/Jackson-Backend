@@ -34,7 +34,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         for part in parser.parts():
             logging.info(f"Part received: name={part.name}, filename={part.filename}")
             if part.name == "file" and part.filename and part.filename.endswith(".pdf"):
-                file_content = part.raw
+                file_content = part.file.read()
 
         if not file_content:
             return func.HttpResponse(
@@ -43,8 +43,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
 
-        # Read PDF and generate SQL
-        sql_queries = []
+        # FIXED: no need for BytesIO again
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
                 tables = page.extract_tables()
