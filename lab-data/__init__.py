@@ -18,22 +18,23 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
 
-        # Extract boundary
-        try:
-            boundary = content_type.split("boundary=")[-1].strip()
-            if boundary.startswith('"') and boundary.endswith('"'):
-                boundary = boundary[1:-1]  # Remove quotes
-            logging.info(f"Using boundary: {boundary}")
-        except Exception as e:
+        # ✅ Extract boundary from header using regex
+        import re
+        match = re.search(r'boundary="?([^";]+)"?', content_type, re.IGNORECASE)
+        if not match:
             return func.HttpResponse(
-                json.dumps({"error": "Failed to extract boundary", "details": str(e)}),
+                json.dumps({"error": "Could not extract boundary from content-type"}),
                 mimetype="application/json",
                 status_code=400
             )
 
-        # Create multipart parser
+        boundary = match.group(1)
+        logging.info(f"Boundary extracted: {boundary}")
+
+        # ✅ Now safely parse multipart body
         try:
-            parser = MultipartParser(BytesIO(req.get_body()), boundary.encode())
+            body = req.get_body()
+            parser = MultipartParser(BytesIO(body), boundary.encode())
         except Exception as e:
             logging.exception("Failed to parse multipart form")
             return func.HttpResponse(
@@ -41,7 +42,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 mimetype="application/json",
                 status_code=500
             )
-
 
         body = req.get_body()
         parser = MultipartParser(BytesIO(body), boundary.encode())
