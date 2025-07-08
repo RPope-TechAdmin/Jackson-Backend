@@ -19,7 +19,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         # ✅ Extract boundary from header using regex
-        import re
         match = re.search(r'boundary="?([^";]+)"?', content_type, re.IGNORECASE)
         if not match:
             return func.HttpResponse(
@@ -31,7 +30,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         boundary = match.group(1)
         logging.info(f"Boundary extracted: {boundary}")
 
-        # ✅ Now safely parse multipart body
+        # ✅ Parse multipart body
         try:
             body = req.get_body()
             parser = MultipartParser(BytesIO(body), boundary.encode())
@@ -43,19 +42,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=500
             )
 
-        body = req.get_body()
-        parser = MultipartParser(BytesIO(body), boundary.encode())
-
         file_content = None
         for part in parser.parts():
             logging.info(f"Part received: name={part.name}, filename={part.filename}")
             if part.name == "file" and part.filename and part.filename.endswith(".pdf"):
-                if hasattr(part.file, 'read'):
-                        file_content = part.file.read()
-                elif isinstance(file_content, BytesIO):
-                    file_content = file_content.read()
-                else:
-                    raise ValueError(f"Unrecognized file format: {type(part.file)}")
+                # Ensure we read the file content as bytes
+                file_content = part.file.read()
 
         if not file_content:
             return func.HttpResponse(
@@ -66,12 +58,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         logging.info(f"Type of file_content: {type(file_content)}")
         logging.info(f"First 100 bytes: {file_content[:100]}")
+
+        # ✅ Initialize SQL query collector
+        sql_queries = []
+
         try:
             with pdfplumber.open(BytesIO(file_content)) as pdf:
                 for page in pdf.pages:
                     tables = page.extract_tables()
                     for table in tables:
-                        if not table:
+                        if not table or len(table) < 2:
                             continue
                         for row in table:
                             if not row or len(row) < 2:
@@ -92,17 +88,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 mimetype="application/json",
                 status_code=200
             )
+
         except Exception as e:
-            logging.exception("Unhandled exception in function")
+            logging.exception("Failed to parse PDF and generate SQL")
             return func.HttpResponse(
-                json.dumps({"error": "Internal server error", "details": str(e)}),
+                json.dumps({"error": "PDF processing failed", "details": str(e)}),
                 mimetype="application/json",
                 status_code=500
             )
+
     except Exception as e:
-            logging.exception("Unhandled exception in function")
-            return func.HttpResponse(
-                json.dumps({"error": "Internal server error", "details": str(e)}),
-                mimetype="application/json",
-                status_code=500
-            )
+        logging.exception("Unhandled exception in function")
+        return func.HttpResponse(
+            json.dumps({"error": "Internal server error", "details": str(e)}),
+            mimetype="application/json",
+            status_code=500
+        )
