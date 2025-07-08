@@ -18,14 +18,30 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
 
-        # Parse multipart form
-        boundary = content_type.split("boundary=")[-1]
-        if not boundary:
+        # Extract boundary
+        try:
+            boundary = content_type.split("boundary=")[-1].strip()
+            if boundary.startswith('"') and boundary.endswith('"'):
+                boundary = boundary[1:-1]  # Remove quotes
+            logging.info(f"Using boundary: {boundary}")
+        except Exception as e:
             return func.HttpResponse(
-                json.dumps({"error": "No boundary found in content-type"}),
+                json.dumps({"error": "Failed to extract boundary", "details": str(e)}),
                 mimetype="application/json",
                 status_code=400
             )
+
+        # Create multipart parser
+        try:
+            parser = MultipartParser(BytesIO(req.get_body()), boundary.encode())
+        except Exception as e:
+            logging.exception("Failed to parse multipart form")
+            return func.HttpResponse(
+                json.dumps({"error": "Multipart parsing failed", "details": str(e)}),
+                mimetype="application/json",
+                status_code=500
+            )
+
 
         body = req.get_body()
         parser = MultipartParser(BytesIO(body), boundary.encode())
