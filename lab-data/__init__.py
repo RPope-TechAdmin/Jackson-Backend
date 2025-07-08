@@ -43,7 +43,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
 
-        # FIXED: no need for BytesIO again
+        logging.info(f"Type of file_content: {type(file_content)}")
+        logging.info(f"First 100 bytes: {file_content[:100]}")
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
                 tables = page.extract_tables()
