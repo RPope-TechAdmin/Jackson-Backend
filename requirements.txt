@@ -6,3 +6,4 @@ pyodbc
 python-tds
 requests_toolbelt
 requests
+python-multipart

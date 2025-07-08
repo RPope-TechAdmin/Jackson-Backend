@@ -1,56 +1,67 @@
-import logging
 import azure.functions as func
-import os
-import tempfile
-import json
-import pyodbc
+from multipart import MultipartParser
+from io import BytesIO
 import pdfplumber
+import pyodbc
+import json
 import re
-from sqlalchemy import create_engine, text
+import logging
+from sqlalchemy import create_enging, text
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    # Read uploaded file from form-data
-    file = req.files.get('file')  # 'file' must match the frontend key
+    try:
+        content_type = req.headers.get('Content-Type', '')
+        if 'multipart/form-data' not in content_type:
+            return func.HttpResponse("Expected multipart/form-data", status_code=400)
 
-    if not file:
-        return func.HttpResponse("No file uploaded", status_code=400)
+        # Extract the boundary string
+        boundary = content_type.split("boundary=")[-1]
+        if not boundary:
+            return func.HttpResponse("No boundary found in Content-Type", status_code=400)
 
-    # Save to temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        tmp_file.write(file.read())
-        tmp_path = tmp_file.name
+        # Parse multipart/form-data body
+        body = req.get_body()
+        parser = MultipartParser(BytesIO(body), boundary.encode())
 
-    # Process PDF using pdfplumber
-    sql_queries = []
-    with pdfplumber.open(tmp_path) as pdf:
-        for page in pdf.pages:
-            tables = page.extract_tables()
-            for table in tables:
-                if not table:
-                    continue
-                for row in table:
-                    logging.info(f"Processing Row: {row}")
-                    if not row or len(row) < 2:
-                        continue  # Skip blank or incomplete rows
+        file_content = None
+        for part in parser.parts():
+            if part.name == "file" and part.filename.endswith(".pdf"):
+                file_content = part.raw
 
-                    raw_name = row[0]
-                    if raw_name is None:
-                        continue  # Skip rows where name is missing
+        if not file_content:
+            return func.HttpResponse("No file uploaded or invalid file type", status_code=400)
 
-                    name = raw_name.strip()
-                    numeric_count = sum(
-                        1 for cell in row[1:]
-                        if cell and isinstance(cell, str) and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
-                    )
-                    sql = f"INSERT INTO your_table (name, count) VALUES ('{name}', {numeric_count});"
-                    sql_queries.append(sql)
+        # Process the PDF
+        sql_queries = []
+        with pdfplumber.open(BytesIO(file_content)) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    if not table:
+                        continue
+                    for row in table:
+                        if not row or len(row) < 2:
+                            continue
 
+                        raw_name = row[0]
+                        if raw_name is None:
+                            continue
 
-    # Optionally clean up
-    os.remove(tmp_path)
+                        name = raw_name.strip()
+                        numeric_count = sum(
+                            1 for cell in row[1:]
+                            if cell and isinstance(cell, str) and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
+                        )
 
-    return func.HttpResponse(
-        body={"queries": sql_queries},
-        mimetype="application/json",
-        status_code=200
-    )
+                        sql = f"INSERT INTO your_table (name, count) VALUES ('{name}', {numeric_count});"
+                        sql_queries.append(sql)
+
+        return func.HttpResponse(
+            json.dumps({"queries": sql_queries}),
+            mimetype="application/json",
+            status_code=200
+        )
+
+    except Exception as e:
+        logging.exception("Exception while handling request")
+        return func.HttpResponse(f"Internal server error: {str(e)}", status_code=500)
