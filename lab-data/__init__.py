@@ -6,6 +6,13 @@ import json
 import re
 import logging
 
+# Define valid field sets for each query type
+FIELD_MAP = {
+    "Dust Suppression - PFAS": ["Perfluorobutane sulfonic acid","Perfluoropentane sulfonic acid","Perfluorohexane sulfonic acid","Perfluoroheptane sulfonic acid","Perfluorooctane sulfonic acid","Perfluorodecane sulfonic acid","Perfluorobutanoic acid","Perfluoropentanoic acid","Perfluorohexanoic acid","Perfluoroheptanoic","erfluorooctanoic acid","Perfluorononanoic acid","Perfluorodecanoic acid","Perfluoroundecanoic acid","Perfluorododecanoic acid","Perfluorotridecanoic acid","Perfluorotetradecanoic acid","TOP_C Perfluorooctane sulfonamide","TOP_C N-Methyl perfluorooctane sulfonamide","TOP_C N-Ethyl perfluorooctane sulfonamide","TOP_C N-Methyl perfluorooctane sulfonamidoethanol","TOP_C N-Ethyl perfluorooctane sulfonamidoethanol","TOP_C N-Methyl perfluorooctane sulfonamidoacetic acid","TOP_C N-Ethyl perfluorooctane sulfonamidoacetic acid","TOP_D 4:2 Fluorotelomer sulfonic acid","TOP_D 6:2 Fluorotelomer sulfonic acid","TOP_D 8:2 Fluorotelomer sulfonic acid","TOP_D 10:2 Fluorotelomer sulfonic acid","TOP_P Sum of PFAS","TOP_P Sum of PFHxS and PFOS","TOP_P Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates","TOP_P Sum of TOP C4 - C14 as Fluorine","TOP_S 13C4-PFOS","TOP_S 13C8-PFOA"],
+    "Dust Suppression - Internal":  ["Nitrogen", "Phosphorus", "Potassium", "Calcium"],
+    "Dust Suppression - External": ["DDT", "Glyphosate", "Chlorpyrifos", "Atrazine"]
+}
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         logging.info("Received request")
@@ -31,13 +38,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         file_content = None
+        query_type = None
 
         for part in multipart_data.parts:
-            content_disposition = part.headers.get(b'Content-Disposition', b'').decode()
-            if 'filename="' in content_disposition and content_disposition.endswith('.pdf"'):
+            headers = part.headers.get(b'Content-Disposition', b'').decode()
+            if 'filename="' in headers and headers.endswith('.pdf"'):
                 file_content = part.content
                 logging.info("PDF file part found and read")
-                break
+            elif 'name="query_type"' in headers:
+                query_type = part.text.strip().lower()
 
         if not file_content:
             return func.HttpResponse(
@@ -46,7 +55,23 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
 
-        sql_queries = []
+        if not query_type:
+            return func.HttpResponse(
+                json.dumps({"error": "Missing query_type in form data"}),
+                mimetype="application/json",
+                status_code=400
+            )
+
+        TARGET_FIELDS = FIELD_MAP.get(query_type)
+        if not TARGET_FIELDS:
+            return func.HttpResponse(
+                json.dumps({"error": f"Unknown query type: {query_type}"}),
+                mimetype="application/json",
+                status_code=400
+            )
+
+        rows_data = []
+        headers = []
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
@@ -54,22 +79,55 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 for table in tables:
                     if not table or len(table) < 2:
                         continue
-                    for row in table:
-                        if not row or len(row) < 2:
+
+                    raw_headers = table[0]
+                    headers = [h.strip() if h else f"col{i}" for i, h in enumerate(raw_headers)]
+
+                    # Allow partial substring matches
+                    field_indexes = [
+                        i for i, h in enumerate(headers)
+                        if any(field.lower() in h.lower() for field in TARGET_FIELDS)
+                    ]
+                    logging.info(f"Matched fields: {[headers[i] for i in field_indexes]}")
+
+                    if not field_indexes:
+                        continue
+
+                    for row in table[1:]:
+                        if not row or len(row) < 4:
                             continue
-                        raw_name = row[0]
-                        if raw_name is None:
-                            continue
-                        name = raw_name.strip()
-                        numeric_count = sum(
-                            1 for cell in row[1:]
-                            if cell and isinstance(cell, str) and re.match(r'^-?\d+(\.\d+)?$', cell.strip())
-                        )
-                        sql = f"INSERT INTO your_table (name, count) VALUES ('{name}', {numeric_count});"
-                        sql_queries.append(sql)
+
+                        name = row[0].strip() if row[0] else "Unknown"
+                        values = [f"'{name}'"]
+
+                        for i in field_indexes:
+                            # Adjust index to read from 3 columns to the right of the matched header
+                            data_index = i + 3
+                            try:
+                                val = row[data_index].strip() if data_index < len(row) and row[data_index] else None
+                                if val in ["-", ""]:
+                                    values.append("NULL")
+                                elif re.match(r'^-?\d+(\.\d+)?$', val):
+                                    values.append(val)
+                                else:
+                                    values.append(f"'{val.replace("'", "''")}'")
+                            except:
+                                values.append("NULL")
+
+                        rows_data.append(f"({', '.join(values)})")
+
+        if not rows_data:
+            return func.HttpResponse(
+                json.dumps({"error": "No valid data found in PDF"}),
+                mimetype="application/json",
+                status_code=400
+            )
+
+        insert_fields = ['name'] + [headers[i] for i in field_indexes]
+        sql = f"INSERT INTO {query_type} ({', '.join(insert_fields)})\nVALUES\n  {',\n  '.join(rows_data)};"
 
         return func.HttpResponse(
-            json.dumps({"queries": sql_queries}),
+            json.dumps({"query": sql}),
             mimetype="application/json",
             status_code=200
         )
