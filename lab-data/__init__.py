@@ -102,7 +102,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                         for i in field_indexes:
                             try:
-                                val = row[i].strip() if i < len(row) and row[i] else None
+                                val = row[i+3].strip() if i < len(row) and row[i] else None
                                 if val in ["-", ""]:
                                     values.append("NULL")
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
