@@ -83,12 +83,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     raw_headers = table[0]
                     headers = [h.strip() if h else f"col{i}" for i, h in enumerate(raw_headers)]
 
-                    # Allow partial substring matches
-                    field_indexes = [
-                        i for i, h in enumerate(headers)
-                        if any(field.lower() in h.lower() for field in TARGET_FIELDS)
-                    ]
-                    logging.info(f"Matched fields: {[headers[i] for i in field_indexes]}")
+                    # Allow approximate header matches
+                    field_indexes = []
+                    matched_headers = []
+                    for i, h in enumerate(headers):
+                        for field in TARGET_FIELDS:
+                            if field.lower() in h.lower():
+                                field_indexes.append(i)
+                                matched_headers.append(h)
+                                break
+
+                    logging.info(f"Matched fields: {matched_headers}")
 
                     if not field_indexes:
                         continue
@@ -102,7 +107,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                         for i in field_indexes:
                             try:
-                                val = row[i+3].strip() if i < len(row) and row[i] else None
+                                val = row[i].strip() if i < len(row) and row[i] else None
                                 if val in ["-", ""]:
                                     values.append("NULL")
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
