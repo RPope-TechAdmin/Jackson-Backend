@@ -94,17 +94,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         continue
 
                     for row in table[1:]:
-                        if not row or len(row) < 4:
+                        if not row or len(row) < 2:
                             continue
 
                         name = row[0].strip() if row[0] else "Unknown"
                         values = [f"'{name}'"]
 
                         for i in field_indexes:
-                            # Adjust index to read from 3 columns to the right of the matched header
-                            data_index = i + 3
                             try:
-                                val = row[data_index].strip() if data_index < len(row) and row[data_index] else None
+                                val = row[i].strip() if i < len(row) and row[i] else None
                                 if val in ["-", ""]:
                                     values.append("NULL")
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
