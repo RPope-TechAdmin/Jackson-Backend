@@ -72,16 +72,27 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         rows_data = []
         headers = []
+        DATA_OFFSET=3
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
                 tables = page.extract_tables()
                 for table in tables:
+                    for table in tables:
+                        logging.info("Full table:")
+                        for r in table:
+                            logging.info(str(r))
+
                     if not table or len(table) < 2:
                         continue
 
                     raw_headers = table[0]
                     headers = [h.strip() if h else f"col{i}" for i, h in enumerate(raw_headers)]
+                    logging.info(f"Extracted headers: {headers}")
+
+                    # Log a couple rows to confirm structure
+                    for debug_row in table[1:3]:
+                        logging.info(f"Sample row: {debug_row}")
 
                     # Allow approximate header matches
                     field_indexes = []
@@ -106,8 +117,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         values = [f"'{name}'"]
 
                         for i in field_indexes:
+                            Index_Real=i+DATA_OFFSET
                             try:
-                                val = row[i].strip() if i < len(row) and row[i] else None
+                                val = row[Index_Real].strip() if Index_Real < len(row) and row[Index_Real] else None
                                 if val in ["-", ""]:
                                     values.append("NULL")
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
