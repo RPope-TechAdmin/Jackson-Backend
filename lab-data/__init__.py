@@ -78,13 +78,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             for page in pdf.pages:
                 tables = page.extract_tables()
                 for table in tables:
-                    for table in tables:
-                        logging.info("Full table:")
-                        for r in table:
-                            logging.info(str(r))
+                    logging.info("Full table:")
+                    for r in table:
+                        logging.info(str(r))
 
                     if not table or len(table) < 2:
                         continue
+
+                    logging.info(f"Found {len(tables)} tables on page {page.page_number}")
 
                     raw_headers = table[0]
                     headers = [h.strip() if h else f"col{i}" for i, h in enumerate(raw_headers)]
@@ -100,6 +101,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     for i, h in enumerate(headers):
                         for field in TARGET_FIELDS:
                             if field.lower() in h.lower():
+                                logging.info(f"Comparing field '{field.lower()}' in header '{h.lower()}'")
                                 field_indexes.append(i)
                                 matched_headers.append(h)
                                 break
@@ -120,6 +122,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             Index_Real=i+DATA_OFFSET
                             try:
                                 val = row[Index_Real].strip() if Index_Real < len(row) and row[Index_Real] else None
+                                if Index_Real >= len(row):
+                                    logging.warning(f"Index {Index_Real} out of range for row: {row}")
                                 if val in ["-", ""]:
                                     values.append("NULL")
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
