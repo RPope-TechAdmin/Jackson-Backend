@@ -8,10 +8,25 @@ import logging
 
 # Define valid field sets for each query type
 FIELD_MAP = {
-    "ds-pfas": ["Perfluorobutane sulfonic acid","Perfluoropentane sulfonic acid","Perfluorohexane sulfonic acid","Perfluoroheptane sulfonic acid","Perfluorooctane sulfonic acid","Perfluorodecane sulfonic acid","Perfluorobutanoic acid","Perfluoropentanoic acid","Perfluorohexanoic acid","Perfluoroheptanoic","erfluorooctanoic acid","Perfluorononanoic acid","Perfluorodecanoic acid","Perfluoroundecanoic acid","Perfluorododecanoic acid","Perfluorotridecanoic acid","Perfluorotetradecanoic acid","TOP_C Perfluorooctane sulfonamide","TOP_C N-Methyl perfluorooctane sulfonamide","TOP_C N-Ethyl perfluorooctane sulfonamide","TOP_C N-Methyl perfluorooctane sulfonamidoethanol","TOP_C N-Ethyl perfluorooctane sulfonamidoethanol","TOP_C N-Methyl perfluorooctane sulfonamidoacetic acid","TOP_C N-Ethyl perfluorooctane sulfonamidoacetic acid","TOP_D 4:2 Fluorotelomer sulfonic acid","TOP_D 6:2 Fluorotelomer sulfonic acid","TOP_D 8:2 Fluorotelomer sulfonic acid","TOP_D 10:2 Fluorotelomer sulfonic acid","TOP_P Sum of PFAS","TOP_P Sum of PFHxS and PFOS","TOP_P Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates","TOP_P Sum of TOP C4 - C14 as Fluorine","TOP_S 13C4-PFOS","TOP_S 13C8-PFOA"],
-    "ds-int":  ["Nitrogen", "Phosphorus", "Potassium", "Calcium"],
+    "ds-pfas": [
+        "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
+        "Perfluoroheptane sulfonic acid", "Perfluorooctane sulfonic acid", "Perfluorodecane sulfonic acid",
+        "Perfluorobutanoic acid", "Perfluoropentanoic acid", "Perfluorohexanoic acid", "Perfluoroheptanoic",
+        "erfluorooctanoic acid", "Perfluorononanoic acid", "Perfluorodecanoic acid", "Perfluoroundecanoic acid",
+        "Perfluorododecanoic acid", "Perfluorotridecanoic acid", "Perfluorotetradecanoic acid",
+        "TOP_C Perfluorooctane sulfonamide", "TOP_C N-Methyl perfluorooctane sulfonamide",
+        "TOP_C N-Ethyl perfluorooctane sulfonamide", "TOP_C N-Methyl perfluorooctane sulfonamidoethanol",
+        "TOP_C N-Ethyl perfluorooctane sulfonamidoethanol", "TOP_C N-Methyl perfluorooctane sulfonamidoacetic acid",
+        "TOP_C N-Ethyl perfluorooctane sulfonamidoacetic acid", "TOP_D 4:2 Fluorotelomer sulfonic acid",
+        "TOP_D 6:2 Fluorotelomer sulfonic acid", "TOP_D 8:2 Fluorotelomer sulfonic acid",
+        "TOP_D 10:2 Fluorotelomer sulfonic acid", "TOP_P Sum of PFAS", "TOP_P Sum of PFHxS and PFOS",
+        "TOP_P Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates", "TOP_P Sum of TOP C4 - C14 as Fluorine",
+        "TOP_S 13C4-PFOS", "TOP_S 13C8-PFOA"
+    ],
+    "ds-int": ["Nitrogen", "Phosphorus", "Potassium", "Calcium"],
     "ds-ext": ["DDT", "Glyphosate", "Chlorpyrifos", "Atrazine"]
 }
+
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -72,11 +87,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         rows_data = []
         headers = []
-        DATA_OFFSET=3
+        DATA_OFFSET = 3
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
                 tables = page.extract_tables()
+                logging.info(f"Found {len(tables)} tables on page {page.page_number}")
                 for table in tables:
                     logging.info("Full table:")
                     for r in table:
@@ -85,23 +101,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     if not table or len(table) < 2:
                         continue
 
-                    logging.info(f"Found {len(tables)} tables on page {page.page_number}")
-
                     raw_headers = table[0]
                     headers = [h.strip() if h else f"col{i}" for i, h in enumerate(raw_headers)]
                     logging.info(f"Extracted headers: {headers}")
 
-                    # Log a couple rows to confirm structure
                     for debug_row in table[1:3]:
                         logging.info(f"Sample row: {debug_row}")
 
-                    # Allow approximate header matches
                     field_indexes = []
                     matched_headers = []
                     for i, h in enumerate(headers):
                         for field in TARGET_FIELDS:
+                            logging.info(f"Comparing field '{field.lower()}' in header '{h.lower()}'")
                             if field.lower() in h.lower():
-                                logging.info(f"Comparing field '{field.lower()}' in header '{h.lower()}'")
                                 field_indexes.append(i)
                                 matched_headers.append(h)
                                 break
@@ -119,18 +131,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         values = [f"'{name}'"]
 
                         for i in field_indexes:
-                            Index_Real=i+DATA_OFFSET
+                            Index_Real = i + DATA_OFFSET
+                            if Index_Real >= len(row):
+                                logging.warning(f"Index {Index_Real} out of range for row: {row}")
+                                values.append("NULL")
+                                continue
                             try:
-                                val = row[Index_Real].strip() if Index_Real < len(row) and row[Index_Real] else None
-                                if Index_Real >= len(row):
-                                    logging.warning(f"Index {Index_Real} out of range for row: {row}")
+                                val = row[Index_Real].strip() if row[Index_Real] else None
                                 if val in ["-", ""]:
                                     values.append("NULL")
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
                                     values.append(val)
                                 else:
                                     values.append(f"'{val.replace("'", "''")}'")
-                            except:
+                            except Exception as e:
+                                logging.warning(f"Failed to process value at index {Index_Real}: {e}")
                                 values.append("NULL")
 
                         rows_data.append(f"({', '.join(values)})")
