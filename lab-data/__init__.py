@@ -27,6 +27,8 @@ FIELD_MAP = {
     "ds-ext": ["DDT", "Glyphosate", "Chlorpyrifos", "Atrazine"]
 }
 
+def normalize(text):
+    return set(re.sub(r'[^\w\s]', '', text).lower().split())
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -111,11 +113,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     field_indexes = []
                     matched_headers = []
                     for i, h in enumerate(headers):
+                        header_words = normalize(h)
                         for field in TARGET_FIELDS:
-                            logging.info(f"Comparing field '{field.lower()}' in header '{h.lower()}'")
-                            if field.lower() in h.lower():
+                            field_words = normalize(field)
+                            if field_words.issubset(header_words):
                                 field_indexes.append(i)
                                 matched_headers.append(h)
+                                logging.info(f"Matched: FIELD='{field}' with HEADER='{h}'")
                                 break
 
                     logging.info(f"Matched fields: {matched_headers}")
