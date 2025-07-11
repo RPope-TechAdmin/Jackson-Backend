@@ -14,14 +14,14 @@ FIELD_MAP = {
         "Perfluorobutanoic acid", "Perfluoropentanoic acid", "Perfluorohexanoic acid", "Perfluoroheptanoic",
         "erfluorooctanoic acid", "Perfluorononanoic acid", "Perfluorodecanoic acid", "Perfluoroundecanoic acid",
         "Perfluorododecanoic acid", "Perfluorotridecanoic acid", "Perfluorotetradecanoic acid",
-        "TOP_C Perfluorooctane sulfonamide", "TOP_C N-Methyl perfluorooctane sulfonamide",
-        "TOP_C N-Ethyl perfluorooctane sulfonamide", "TOP_C N-Methyl perfluorooctane sulfonamidoethanol",
-        "TOP_C N-Ethyl perfluorooctane sulfonamidoethanol", "TOP_C N-Methyl perfluorooctane sulfonamidoacetic acid",
-        "TOP_C N-Ethyl perfluorooctane sulfonamidoacetic acid", "TOP_D 4:2 Fluorotelomer sulfonic acid",
-        "TOP_D 6:2 Fluorotelomer sulfonic acid", "TOP_D 8:2 Fluorotelomer sulfonic acid",
-        "TOP_D 10:2 Fluorotelomer sulfonic acid", "TOP_P Sum of PFAS", "TOP_P Sum of PFHxS and PFOS",
-        "TOP_P Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates", "TOP_P Sum of TOP C4 - C14 as Fluorine",
-        "TOP_S 13C4-PFOS", "TOP_S 13C8-PFOA"
+        "Perfluorooctane sulfonamide", "N-Methyl perfluorooctane sulfonamide",
+        "N-Ethyl perfluorooctane sulfonamide", "N-Methyl perfluorooctane sulfonamidoethanol",
+        "N-Ethyl perfluorooctane sulfonamidoethanol", "N-Methyl perfluorooctane sulfonamidoacetic acid",
+        "N-Ethyl perfluorooctane sulfonamidoacetic acid", "4:2 Fluorotelomer sulfonic acid",
+        "6:2 Fluorotelomer sulfonic acid", "8:2 Fluorotelomer sulfonic acid",
+        "10:2 Fluorotelomer sulfonic acid", "Sum of PFAS", "Sum of PFHxS and PFOS",
+        "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates", "Sum of TOP C4 - C14 as Fluorine",
+        "13C4-PFOS", "13C8-PFOA"
     ],
     "ds-int": ["Nitrogen", "Phosphorus", "Potassium", "Calcium"],
     "ds-ext": ["DDT", "Glyphosate", "Chlorpyrifos", "Atrazine"]
@@ -87,82 +87,62 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400
             )
 
-        rows_data = []
-        headers = []
+        insert_rows = []
         DATA_OFFSET = 3
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
                 tables = page.extract_tables()
-                logging.info(f"Found {len(tables)} tables on page {page.page_number}")
                 for table in tables:
-                    logging.info("Full table:")
-                    for r in table:
-                        logging.info(str(r))
-
                     if not table or len(table) < 2:
                         continue
 
-                    raw_headers = table[0]
-                    headers = [h.strip() if h else f"col{i}" for i, h in enumerate(raw_headers)]
-                    logging.info(f"Extracted headers: {headers}")
-
-                    for debug_row in table[1:3]:
-                        logging.info(f"Sample row: {debug_row}")
-
-                    field_indexes = []
-                    matched_headers = []
+                    headers = [h.strip() if h else f"col{i}" for i, h in enumerate(table[0])]
+                    header_map = {}
                     for i, h in enumerate(headers):
-                        header_words = normalize(h)
+                        if h.lower().startswith("col") or set(h.strip()) == {'-'}:
+                            continue
                         for field in TARGET_FIELDS:
-                            field_words = normalize(field)
-                            if field_words.issubset(header_words):
-                                field_indexes.append(i)
-                                matched_headers.append(h)
-                                logging.info(f"Matched: FIELD='{field}' with HEADER='{h}'")
+                            if normalize(field).issubset(normalize(h)):
+                                header_map[field] = i
                                 break
 
-                    logging.info(f"Matched fields: {matched_headers}")
-
-                    if not field_indexes:
+                    if not header_map:
                         continue
 
                     for row in table[1:]:
                         if not row or len(row) < 2:
                             continue
 
-                        name = row[0].strip() if row[0] else "Unknown"
-                        values = [f"'{name}'"]
+                        sample_location = row[0].strip() if row[0] else "Unknown"
+                        row_values = [f"'{sample_location}'"]
 
-                        for i in field_indexes:
-                            Index_Real = i + DATA_OFFSET
-                            if Index_Real >= len(row):
-                                logging.warning(f"Index {Index_Real} out of range for row: {row}")
-                                values.append("NULL")
-                                continue
-                            try:
-                                val = row[Index_Real].strip() if row[Index_Real] else None
-                                if val in ["-", ""]:
-                                    values.append("NULL")
-                                elif re.match(r'^-?\d+(\.\d+)?$', val):
-                                    values.append(val)
-                                else:
-                                    values.append(f"'{val.replace("'", "''")}'")
-                            except Exception as e:
-                                logging.warning(f"Failed to process value at index {Index_Real}: {e}")
-                                values.append("NULL")
+                        for field in TARGET_FIELDS:
+                            i = header_map.get(field)
+                            val = "NULL"
+                            if i is not None and (i + DATA_OFFSET) < len(row):
+                                raw = row[i + DATA_OFFSET]
+                                if raw:
+                                    raw = raw.strip()
+                                    if raw in ["-", ""]:
+                                        val = "NULL"
+                                    elif re.match(r'^-?\d+(\.\d+)?$', raw):
+                                        val = raw
+                                    else:
+                                        val = f"'{raw.replace("'", "''")}'"
+                            row_values.append(val)
 
-                        rows_data.append(f"({', '.join(values)})")
+                        insert_rows.append(f"({', '.join(row_values)})")
 
-        if not rows_data:
+        if not insert_rows:
             return func.HttpResponse(
                 json.dumps({"error": "No valid data found in PDF"}),
                 mimetype="application/json",
                 status_code=400
             )
 
-        insert_fields = ['name'] + [headers[i] for i in field_indexes]
-        sql = f"INSERT INTO {query_type} ({', '.join(insert_fields)})\nVALUES\n  {',\n  '.join(rows_data)};"
+        insert_fields = ['[Sample Location]'] + [f"[{f}]" for f in TARGET_FIELDS]
+        sql = f"INSERT INTO {query_type} ({', '.join(insert_fields)})\nVALUES\n  {',\n  '.join(insert_rows)};"
 
         return func.HttpResponse(
             json.dumps({"query": sql}),
