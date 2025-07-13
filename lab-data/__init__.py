@@ -6,6 +6,7 @@ import json
 import re
 import logging
 
+# Define valid field sets for each query type
 FIELD_MAP = {
     "ds-pfas": [
         "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
@@ -56,45 +57,57 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         insert_rows = []
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
-            for page in pdf.pages:
+            for page_index, page in enumerate(pdf.pages):
                 tables = page.extract_tables()
-                for table in tables:
+                logging.info(f"Page {page_index + 1} has {len(tables)} tables.")
+
+                for table_index, table in enumerate(tables):
                     if not table or len(table) < 2:
+                        logging.warning(f"Skipping empty or too-short table on page {page_index + 1}.")
                         continue
 
                     headers = [normalize(h) if h else "" for h in table[0]]
-                    matched_indices = {
-                        field: i for i, h in enumerate(headers)
-                        for field in target_fields if normalize(field) in h
-                    }
+                    logging.info(f"Extracted headers from page {page_index + 1} table {table_index + 1}: {headers}")
+
+                    matched_indices = {}
+                    for field in target_fields:
+                        for i, header in enumerate(headers):
+                            if normalize(field) in header:
+                                matched_indices[field] = i
+                                break
 
                     if not matched_indices:
+                        logging.warning(f"No matching headers found on page {page_index + 1} table {table_index + 1}")
                         continue
 
-                    for row in table[1:]:
+                    for row_index, row in enumerate(table[1:]):
                         if not row or len(row) < 3:
+                            logging.info(f"Skipping row {row_index + 1} due to insufficient columns: {row}")
                             continue
 
                         sample_location = row[0].strip() if row[0] else "Unknown"
                         row_values = [f"'{sample_location}'"]
+                        row_has_data = False
 
-                        # Extract only columns from the 3rd index onward
                         for field in target_fields:
                             i = matched_indices.get(field)
                             val = "NULL"
-                            if i is not None and i >= 2 and i < len(row):
+                            if i is not None and i < len(row):
                                 raw = row[i]
                                 if raw:
                                     raw = raw.strip()
-                                    if raw in ["-", ""]:
-                                        val = "NULL"
-                                    elif re.match(r'^-?\d+(\.\d+)?$', raw):
-                                        val = raw
-                                    else:
-                                        val = f"'{raw.replace('\'', '\'\'')}'"
+                                    if raw not in ["", "-"]:
+                                        if re.match(r'^-?\d+(\.\d+)?$', raw):
+                                            val = raw
+                                        else:
+                                            val = f"'{raw.replace('\'', '\'\'')}'"
+                                        row_has_data = True
                             row_values.append(val)
 
-                        insert_rows.append(f"({', '.join(row_values)})")
+                        if row_has_data:
+                            insert_rows.append(f"({', '.join(row_values)})")
+                        else:
+                            logging.info(f"Row {row_index + 1} matched headers but had no usable values.")
 
         if not insert_rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
@@ -102,7 +115,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         insert_fields = ['[Sample Location]'] + [f"[{f}]" for f in target_fields]
         sql_query = f"INSERT INTO {query_type} ({', '.join(insert_fields)})\nVALUES\n  {',\n  '.join(insert_rows)};"
 
-        return func.HttpResponse(json.dumps({"query": sql_query}), mimetype="application/json", status_code=200)
+        return func.HttpResponse(
+            json.dumps({"query": sql_query}),
+            mimetype="application/json",
+            status_code=200
+        )
 
     except Exception as e:
         logging.exception("Unhandled exception")
