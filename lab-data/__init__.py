@@ -6,13 +6,12 @@ import json
 import re
 import logging
 
-# Define valid field sets for each query type
 FIELD_MAP = {
     "ds-pfas": [
         "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
         "Perfluoroheptane sulfonic acid", "Perfluorooctane sulfonic acid", "Perfluorodecane sulfonic acid",
         "Perfluorobutanoic acid", "Perfluoropentanoic acid", "Perfluorohexanoic acid", "Perfluoroheptanoic",
-        "erfluorooctanoic acid", "Perfluorononanoic acid", "Perfluorodecanoic acid", "Perfluoroundecanoic acid",
+        "Perfluorooctanoic acid", "Perfluorononanoic acid", "Perfluorodecanoic acid", "Perfluoroundecanoic acid",
         "Perfluorododecanoic acid", "Perfluorotridecanoic acid", "Perfluorotetradecanoic acid",
         "Perfluorooctane sulfonamide", "N-Methyl perfluorooctane sulfonamide",
         "N-Ethyl perfluorooctane sulfonamide", "N-Methyl perfluorooctane sulfonamidoethanol",
@@ -28,67 +27,33 @@ FIELD_MAP = {
 }
 
 def normalize(text):
-    return set(re.sub(r'[^\w\s]', '', text).lower().split())
+    return re.sub(r'[^\w\s]', '', text).lower().strip()
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        logging.info("Received request")
+        logging.info("Handling PDF upload and data extraction")
 
         content_type = req.headers.get("Content-Type", "")
         if "multipart/form-data" not in content_type:
-            return func.HttpResponse(
-                json.dumps({"error": "Expected multipart/form-data"}),
-                mimetype="application/json",
-                status_code=400
-            )
+            return func.HttpResponse(json.dumps({"error": "Expected multipart/form-data"}), status_code=400)
 
-        body = req.get_body()
+        multipart_data = decoder.MultipartDecoder(req.get_body(), content_type)
 
-        try:
-            multipart_data = decoder.MultipartDecoder(body, content_type)
-        except Exception as e:
-            logging.exception("Failed to decode multipart")
-            return func.HttpResponse(
-                json.dumps({"error": "Multipart parsing failed", "details": str(e)}),
-                mimetype="application/json",
-                status_code=500
-            )
-
-        file_content = None
-        query_type = None
-
+        file_content, query_type = None, None
         for part in multipart_data.parts:
-            headers = part.headers.get(b'Content-Disposition', b'').decode()
-            if 'filename="' in headers and headers.endswith('.pdf"'):
+            content_disp = part.headers.get(b"Content-Disposition", b"").decode()
+            if 'filename="' in content_disp and content_disp.endswith('.pdf"'):
                 file_content = part.content
-                logging.info("PDF file part found and read")
-            elif 'name="query_type"' in headers:
+            elif 'name="query_type"' in content_disp:
                 query_type = part.text.strip().lower()
 
         if not file_content:
-            return func.HttpResponse(
-                json.dumps({"error": "No PDF file uploaded"}),
-                mimetype="application/json",
-                status_code=400
-            )
+            return func.HttpResponse(json.dumps({"error": "No PDF file uploaded"}), status_code=400)
+        if not query_type or query_type not in FIELD_MAP:
+            return func.HttpResponse(json.dumps({"error": "Invalid or missing query_type"}), status_code=400)
 
-        if not query_type:
-            return func.HttpResponse(
-                json.dumps({"error": "Missing query_type in form data"}),
-                mimetype="application/json",
-                status_code=400
-            )
-
-        TARGET_FIELDS = FIELD_MAP.get(query_type)
-        if not TARGET_FIELDS:
-            return func.HttpResponse(
-                json.dumps({"error": f"Unknown query type: {query_type}"}),
-                mimetype="application/json",
-                status_code=400
-            )
-
+        target_fields = FIELD_MAP[query_type]
         insert_rows = []
-        DATA_OFFSET = 3
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
@@ -97,31 +62,28 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     if not table or len(table) < 2:
                         continue
 
-                    headers = [h.strip() if h else f"col{i}" for i, h in enumerate(table[0])]
-                    header_map = {}
-                    for i, h in enumerate(headers):
-                        if h.lower().startswith("col") or set(h.strip()) == {'-'}:
-                            continue
-                        for field in TARGET_FIELDS:
-                            if normalize(field).issubset(normalize(h)):
-                                header_map[field] = i
-                                break
+                    headers = [normalize(h) if h else "" for h in table[0]]
+                    matched_indices = {
+                        field: i for i, h in enumerate(headers)
+                        for field in target_fields if normalize(field) in h
+                    }
 
-                    if not header_map:
+                    if not matched_indices:
                         continue
 
                     for row in table[1:]:
-                        if not row or len(row) < 2:
+                        if not row or len(row) < 3:
                             continue
 
                         sample_location = row[0].strip() if row[0] else "Unknown"
                         row_values = [f"'{sample_location}'"]
 
-                        for field in TARGET_FIELDS:
-                            i = header_map.get(field)
+                        # Extract only columns from the 3rd index onward
+                        for field in target_fields:
+                            i = matched_indices.get(field)
                             val = "NULL"
-                            if i is not None and (i + DATA_OFFSET) < len(row):
-                                raw = row[i + DATA_OFFSET]
+                            if i is not None and i >= 2 and i < len(row):
+                                raw = row[i]
                                 if raw:
                                     raw = raw.strip()
                                     if raw in ["-", ""]:
@@ -129,31 +91,22 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                     elif re.match(r'^-?\d+(\.\d+)?$', raw):
                                         val = raw
                                     else:
-                                        val = f"'{raw.replace("'", "''")}'"
+                                        val = f"'{raw.replace('\'', '\'\'')}'"
                             row_values.append(val)
 
                         insert_rows.append(f"({', '.join(row_values)})")
 
         if not insert_rows:
-            return func.HttpResponse(
-                json.dumps({"error": "No valid data found in PDF"}),
-                mimetype="application/json",
-                status_code=400
-            )
+            return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
 
-        insert_fields = ['[Sample Location]'] + [f"[{f}]" for f in TARGET_FIELDS]
-        sql = f"INSERT INTO {query_type} ({', '.join(insert_fields)})\nVALUES\n  {',\n  '.join(insert_rows)};"
+        insert_fields = ['[Sample Location]'] + [f"[{f}]" for f in target_fields]
+        sql_query = f"INSERT INTO {query_type} ({', '.join(insert_fields)})\nVALUES\n  {',\n  '.join(insert_rows)};"
 
-        return func.HttpResponse(
-            json.dumps({"query": sql}),
-            mimetype="application/json",
-            status_code=200
-        )
+        return func.HttpResponse(json.dumps({"query": sql_query}), mimetype="application/json", status_code=200)
 
     except Exception as e:
         logging.exception("Unhandled exception")
         return func.HttpResponse(
             json.dumps({"error": "Internal server error", "details": str(e)}),
-            mimetype="application/json",
             status_code=500
         )
