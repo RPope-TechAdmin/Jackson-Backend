@@ -67,7 +67,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                     # Skip tables that contain no known analytes
                     analyte_labels = [normalize(r[0]) for r in table[3:] if r and r[0]]
-                    if not any(a in normalized_analytes for a in analyte_labels):
+                    if not any(any(normalize(f) in a for f in analyte_fields) for a in analyte_labels):
                         logging.info(f"Skipping table {t_idx} (no analytes found)")
                         continue
 
