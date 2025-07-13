@@ -8,7 +8,9 @@ import logging
 
 FIELD_MAP = {
     "ds-pfas": [
-        "Sampling Date/Time","Sample Location","Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
+        "Sample Location",
+        "Sampling Date/Time",
+        "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
         "Perfluoroheptane sulfonic acid", "Perfluorooctane sulfonic acid", "Perfluorodecane sulfonic acid",
         "Perfluorobutanoic acid", "Perfluoropentanoic acid", "Perfluorohexanoic acid", "Perfluoroheptanoic",
         "Perfluorooctanoic acid", "Perfluorononanoic acid", "Perfluorodecanoic acid", "Perfluoroundecanoic acid",
@@ -21,9 +23,7 @@ FIELD_MAP = {
         "10:2 Fluorotelomer sulfonic acid", "Sum of PFAS", "Sum of PFHxS and PFOS",
         "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates", "Sum of TOP C4 - C14 as Fluorine",
         "13C4-PFOS", "13C8-PFOA"
-    ],
-    "ds-int": ["Nitrogen", "Phosphorus", "Potassium", "Calcium"],
-    "ds-ext": ["DDT", "Glyphosate", "Chlorpyrifos", "Atrazine"]
+    ]
 }
 
 def normalize(text):
@@ -51,75 +51,63 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(json.dumps({"error": "Invalid or missing query_type"}), status_code=400)
 
         target_fields = FIELD_MAP[query_type]
-        field_lookup = {normalize(f): f for f in target_fields}
-        wide_table = {}  # {sample_location: {field_name: value}}
+        analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
+
+        rows = []
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page in pdf.pages:
                 tables = page.extract_tables()
                 for table in tables:
-                    if not table or len(table) < 2:
+                    if not table or len(table) < 3:
                         continue
 
-                    sample_locations = table[0][3:]
-                    if not sample_locations:
-                        continue
+                    sample_ids = table[0][3:]
+                    sample_dates = table[1][3:]
 
-                    for row in table[1:]:
-                        if not row or len(row) < 4:
+                    for col_index, sample_id in enumerate(sample_ids):
+                        if not sample_id:
                             continue
 
-                        raw_field = row[0]
-                        if not raw_field:
-                            continue
+                        date_val = sample_dates[col_index] if col_index < len(sample_dates) else "NULL"
+                        sample_location = sample_id.strip()
+                        sample_datetime = date_val.strip() if date_val else "NULL"
 
-                        norm_field = normalize(raw_field)
-                        matched_field = field_lookup.get(norm_field)
-                        if not matched_field:
-                            continue
+                        row_dict = {
+                            "Sample Location": f"'{sample_location}'",
+                            "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
+                        }
 
-                        for i, sample_location in enumerate(sample_locations):
-                            if not sample_location:
+                        for row in table[3:]:
+                            if not row or len(row) < 4 or not row[2]:
+                                continue
+                            analyte = row[2].strip()
+                            match = next((f for f in analyte_fields if normalize(f) in normalize(analyte)), None)
+                            if not match:
                                 continue
 
-                            col_index = i + 3
-                            val = "NULL"
-                            if col_index < len(row):
-                                raw_val = row[col_index]
-                                if raw_val:
-                                    raw_val = raw_val.strip()
-                                    if raw_val not in ["", "-"]:
-                                        if re.match(r'^-?\d+(\.\d+)?$', raw_val):
-                                            val = raw_val
-                                        else:
-                                            val = f"'{raw_val.replace('\'', '\'\'')}'"
+                            val = row[col_index + 3] if col_index + 3 < len(row) else None
+                            if val:
+                                val = val.strip()
+                                if val in ["", "-", "----"]:
+                                    row_dict[match] = "NULL"
+                                elif re.match(r'^-?\d+(\.\d+)?$', val):
+                                    row_dict[match] = val
+                                else:
+                                    row_dict[match] = f"'{val.replace("'", "''")}'"
+                            else:
+                                row_dict[match] = "NULL"
 
-                            sample_location = sample_location.strip()
-                            if sample_location not in wide_table:
-                                wide_table[sample_location] = {}
-                            wide_table[sample_location][matched_field] = val
+                        row_values = [row_dict.get(field, "NULL") for field in target_fields]
+                        rows.append(f"           ({', '.join(row_values)})")
 
-        if not wide_table:
+        if not rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
 
-        # Prepare SQL INSERT
         columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
-        insert_prefix = f"INSERT INTO [Jackson].[{query_type.upper()}]\n           ({columns_sql})\n     VALUES"
+        sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
 
-        insert_rows = []
-        for location, field_values in wide_table.items():
-            row_values = []
-            for f in target_fields:
-                row_values.append(field_values.get(f, "NULL"))
-            insert_rows.append(f"           ({', '.join(row_values)})")
-
-        sql_query = insert_prefix + "\n" + ",\n".join(insert_rows) + ";"
-
-        return func.HttpResponse(
-            json.dumps({"query": sql_query}),
-            mimetype="application/json",
-            status_code=200
-        )
+        return func.HttpResponse(json.dumps({"query": sql}), mimetype="application/json", status_code=200)
 
     except Exception as e:
         logging.exception("Unhandled exception")
