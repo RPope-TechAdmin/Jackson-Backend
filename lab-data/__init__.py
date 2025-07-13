@@ -54,7 +54,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         target_fields = FIELD_MAP[query_type]
         analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
         normalized_analytes = [normalize(f) for f in analyte_fields]
-
+        combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
+        
         rows = []
         logging.info("Opening PDF...")
         with pdfplumber.open(BytesIO(file_content)) as pdf:
