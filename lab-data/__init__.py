@@ -128,7 +128,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                     if val in ["", "-", "----"]:
                                         row_dict[match] = "NULL"
                                     elif re.match(r'^-?\d+(\.\d+)?$', val):
-                                        row_dict[match] = val
+                                        if val.startswith('<'):
+                                            row_dict[match] = val[1:]  # Remove the '<' and keep the number
+                                        else:
+                                            row_dict[match] = val
                                     else:
                                         row_dict[match] = f"'{val.replace("'", "''")}'"
                                 else:
