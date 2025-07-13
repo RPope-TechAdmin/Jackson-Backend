@@ -52,10 +52,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(json.dumps({"error": "Invalid or missing query_type"}), status_code=400)
 
         target_fields = FIELD_MAP[query_type]
-        analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
+        analyte_fields = target_fields[2:]
         normalized_analytes = [normalize(f) for f in analyte_fields]
 
-        rows = []
+        combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
+
         logging.info("Opening PDF...")
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page_number, page in enumerate(pdf.pages):
@@ -65,7 +66,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     if not table or len(table) < 3:
                         continue
 
-                    # Skip tables that contain no known analytes
                     analyte_labels = [normalize(r[0]) for r in table[3:] if r and r[0]]
                     if not any(any(normalize(f) in a for f in analyte_fields) for a in analyte_labels):
                         logging.info(f"Skipping table {t_idx} (no analytes found)")
@@ -82,10 +82,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         sample_location = sample_location.strip()
                         sample_datetime = date_val.strip() if date_val else "NULL"
 
-                        row_dict = {
-                            "Sample Location": f"'{sample_location}'",
-                            "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
-                        }
+                        key = (sample_location, sample_datetime)
+                        if key not in combined_rows:
+                            combined_rows[key] = {
+                                "Sample Location": f"'{sample_location}'",
+                                "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
+                            }
+
+                        row_dict = combined_rows[key]
 
                         i = 3
                         while i < len(table):
@@ -127,11 +131,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             i = j
 
-                        row_values = [row_dict.get(field, "NULL") for field in target_fields]
-                        rows.append(f"           ({', '.join(row_values)})")
-
-        if not rows:
+        if not combined_rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
+
+        rows = []
+        for row_dict in combined_rows.values():
+            row_values = [row_dict.get(field, "NULL") for field in target_fields]
+            rows.append(f"           ({', '.join(row_values)})")
 
         columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
         sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
