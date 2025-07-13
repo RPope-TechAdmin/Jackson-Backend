@@ -6,7 +6,6 @@ import json
 import re
 import logging
 
-# Define valid field sets for each query type
 FIELD_MAP = {
     "ds-pfas": [
         "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
@@ -32,8 +31,6 @@ def normalize(text):
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        logging.info("Handling PDF upload and data extraction")
-
         content_type = req.headers.get("Content-Type", "")
         if "multipart/form-data" not in content_type:
             return func.HttpResponse(json.dumps({"error": "Expected multipart/form-data"}), status_code=400)
@@ -59,41 +56,39 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page_index, page in enumerate(pdf.pages):
                 tables = page.extract_tables()
-                logging.info(f"Page {page_index + 1} has {len(tables)} tables.")
-
                 for table_index, table in enumerate(tables):
                     if not table or len(table) < 2:
-                        logging.warning(f"Skipping empty or too-short table on page {page_index + 1}.")
                         continue
 
-                    headers = [normalize(h) if h else "" for h in table[0]]
-                    logging.info(f"Extracted headers from page {page_index + 1} table {table_index + 1}: {headers}")
-
-                    matched_indices = {}
-                    for field in target_fields:
-                        for i, header in enumerate(headers):
-                            if normalize(field) in header:
-                                matched_indices[field] = i
-                                break
-
-                    if not matched_indices:
-                        logging.warning(f"No matching headers found on page {page_index + 1} table {table_index + 1}")
+                    # First row = sample location headers from column 3 onward
+                    sample_locations = table[0][3:]
+                    if not sample_locations or all(not s for s in sample_locations):
                         continue
+
+                    logging.info(f"Sample locations found: {sample_locations}")
 
                     for row_index, row in enumerate(table[1:]):
-                        if not row or len(row) < 3:
-                            logging.info(f"Skipping row {row_index + 1} due to insufficient columns: {row}")
+                        if not row or len(row) < 4:
                             continue
 
-                        sample_location = row[0].strip() if row[0] else "Unknown"
-                        row_values = [f"'{sample_location}'"]
-                        row_has_data = False
+                        data_label = row[0]
+                        if not data_label:
+                            continue
 
-                        for field in target_fields:
-                            i = matched_indices.get(field)
+                        matched_field = next(
+                            (f for f in target_fields if normalize(f) in normalize(data_label)), None
+                        )
+                        if not matched_field:
+                            continue
+
+                        for i, sample_location in enumerate(sample_locations):
+                            if not sample_location:
+                                continue
+
                             val = "NULL"
-                            if i is not None and i < len(row):
-                                raw = row[i]
+                            col_index = i + 3  # data starts from col 3
+                            if col_index < len(row):
+                                raw = row[col_index]
                                 if raw:
                                     raw = raw.strip()
                                     if raw not in ["", "-"]:
@@ -101,19 +96,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                             val = raw
                                         else:
                                             val = f"'{raw.replace('\'', '\'\'')}'"
-                                        row_has_data = True
-                            row_values.append(val)
 
-                        if row_has_data:
-                            insert_rows.append(f"({', '.join(row_values)})")
-                        else:
-                            logging.info(f"Row {row_index + 1} matched headers but had no usable values.")
+                            insert_rows.append(f"('{sample_location}', '{matched_field}', {val})")
 
         if not insert_rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
 
-        insert_fields = ['[Sample Location]'] + [f"[{f}]" for f in target_fields]
-        sql_query = f"INSERT INTO {query_type} ({', '.join(insert_fields)})\nVALUES\n  {',\n  '.join(insert_rows)};"
+        sql_query = (
+            "INSERT INTO {table} ([Sample Location], [Analyte], [Value])\nVALUES\n  "
+            + ",\n  ".join(insert_rows)
+            + ";"
+        ).format(table=query_type)
 
         return func.HttpResponse(
             json.dumps({"query": sql_query}),
