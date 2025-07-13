@@ -101,7 +101,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 j += 1
 
                             analyte = ' '.join(analyte_lines).strip()
-                            match = next((f for f in analyte_fields if normalize(f) in normalize(analyte)), None)
+                            match = next((f for f in analyte_fields if normalize(analyte) in normalize(f) or normalize(f) in normalize(analyte)), None)
 
                             logging.info({
                                 "analyte_raw": analyte,
