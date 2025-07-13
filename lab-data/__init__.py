@@ -133,8 +133,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         if not rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
 
+        rows = []
+        for row_dict in combined_rows.values():
+            row_values = [row_dict.get(field, "NULL") for field in target_fields]
+            rows.append(f"           ({', '.join(row_values)})")
+
         columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
         sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
+
 
         return func.HttpResponse(json.dumps({"query": sql}), mimetype="application/json", status_code=200)
 
