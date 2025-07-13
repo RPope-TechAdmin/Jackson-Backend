@@ -62,15 +62,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     if not table or len(table) < 3:
                         continue
 
-                    sample_ids = table[0][3:]
-                    sample_dates = table[1][3:]
+                    sample_locations = table[0][3:]
+                    sample_datetimes = table[1][3:]
 
-                    for col_index, sample_id in enumerate(sample_ids):
-                        if not sample_id:
+                    for col_index, sample_location in enumerate(sample_locations):
+                        if not sample_location:
                             continue
 
-                        date_val = sample_dates[col_index] if col_index < len(sample_dates) else "NULL"
-                        sample_location = sample_id.strip()
+                        date_val = sample_datetimes[col_index] if col_index < len(sample_datetimes) else "NULL"
+                        sample_location = sample_location.strip()
                         sample_datetime = date_val.strip() if date_val else "NULL"
 
                         row_dict = {
@@ -79,9 +79,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         }
 
                         for row in table[3:]:
-                            if not row or len(row) < 4 or not row[2]:
+                            if not row or len(row) < (col_index + 4):
                                 continue
-                            analyte = row[2].strip()
+                            analyte = row[0].strip() if row[0] else ""
                             match = next((f for f in analyte_fields if normalize(f) in normalize(analyte)), None)
                             if not match:
                                 continue
