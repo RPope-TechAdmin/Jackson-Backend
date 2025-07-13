@@ -55,7 +55,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         analyte_fields = target_fields[2:]
         normalized_analytes = [normalize(f) for f in analyte_fields]
 
-        combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
+        combined_rows = {}
 
         logging.info("Opening PDF...")
         with pdfplumber.open(BytesIO(file_content)) as pdf:
@@ -100,9 +100,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             analyte_lines = [row[0].strip()] if row[0] else []
                             j = i + 1
-                            while j < len(table) and (not table[j][0] or table[j][0].strip() == ''):
-                                analyte_lines.append(table[j][0].strip() if table[j][0] else '')
-                                j += 1
+                            while j < len(table):
+                                next_line = table[j][0] if table[j][0] else ''
+                                next_line_stripped = next_line.strip()
+                                if next_line_stripped == '' or re.match(r'^[A-Za-z()\d\s\-]+$', next_line_stripped):
+                                    analyte_lines.append(next_line_stripped)
+                                    j += 1
+                                else:
+                                    break
 
                             analyte = ' '.join(analyte_lines).strip()
                             match = next((f for f in analyte_fields if normalize(analyte) in normalize(f) or normalize(f) in normalize(analyte)), None)
