@@ -90,22 +90,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             while j < len(table) and (not table[j][0] or table[j][0].strip() == ''):
                                 analyte_lines.append(table[j][0].strip() if table[j][0] else '')
                                 j += 1
+
                             analyte = ' '.join(analyte_lines).strip()
 
                             match = next((f for f in analyte_fields if normalize(f) in normalize(analyte)), None)
                             if match:
-                                logging.info({
-                                    "analyte": analyte,
-                                    "matched_field": match,
-                                    "column_index": col_index + 3,
-                                    "value_raw": row[col_index + 3] if col_index + 3 < len(row) else None,
-                                    "val_from_last_row": table[j - 1][col_index + 3] if col_index + 3 < len(table[j - 1]) else None,
-                                    "row_index": i,
-                                    "row_data": row,
-                                    "sample_location": sample_location,
-                                    "sample_datetime": sample_datetime
-                                })
-                                val = row[col_index + 3] if col_index + 3 < len(row) else None
+                                val_row = table[j - 1]
+                                val = val_row[col_index + 3] if col_index + 3 < len(val_row) else None
                                 if val:
                                     val = val.strip()
                                     if val in ["", "-", "----"]:
@@ -117,7 +108,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 else:
                                     row_dict[match] = "NULL"
 
-                            i = j if len(analyte_lines) > 1 else i + 1
+                            i = j  # always move to the next unmatched line
 
                         row_values = [row_dict.get(field, "NULL") for field in target_fields]
                         rows.append(f"           ({', '.join(row_values)})")
