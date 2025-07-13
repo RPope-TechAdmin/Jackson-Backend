@@ -94,6 +94,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             match = next((f for f in analyte_fields if normalize(f) in normalize(analyte)), None)
                             if match:
+                                logging.info({
+                                    "analyte": analyte,
+                                    "matched_field": match,
+                                    "column_index": col_index + 3,
+                                    "value_raw": row[col_index + 3] if col_index + 3 < len(row) else None,
+                                    "val_from_last_row": table[j - 1][col_index + 3] if col_index + 3 < len(table[j - 1]) else None,
+                                    "row_index": i,
+                                    "row_data": row,
+                                    "sample_location": sample_location,
+                                    "sample_datetime": sample_datetime
+                                })
                                 val = row[col_index + 3] if col_index + 3 < len(row) else None
                                 if val:
                                     val = val.strip()
