@@ -78,25 +78,35 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
                         }
 
-                        for row in table[3:]:
+                        i = 3
+                        while i < len(table):
+                            row = table[i]
                             if not row or len(row) < (col_index + 4):
-                                continue
-                            analyte = row[0].strip() if row[0] else ""
-                            match = next((f for f in analyte_fields if normalize(f) in normalize(analyte)), None)
-                            if not match:
+                                i += 1
                                 continue
 
-                            val = row[col_index + 3] if col_index + 3 < len(row) else None
-                            if val:
-                                val = val.strip()
-                                if val in ["", "-", "----"]:
-                                    row_dict[match] = "NULL"
-                                elif re.match(r'^-?\d+(\.\d+)?$', val):
-                                    row_dict[match] = val
+                            analyte_lines = [row[0].strip()] if row[0] else []
+                            j = i + 1
+                            while j < len(table) and (not table[j][0] or table[j][0].strip() == ''):
+                                analyte_lines.append(table[j][0].strip() if table[j][0] else '')
+                                j += 1
+                            analyte = ' '.join(analyte_lines).strip()
+
+                            match = next((f for f in analyte_fields if normalize(f) in normalize(analyte)), None)
+                            if match:
+                                val = row[col_index + 3] if col_index + 3 < len(row) else None
+                                if val:
+                                    val = val.strip()
+                                    if val in ["", "-", "----"]:
+                                        row_dict[match] = "NULL"
+                                    elif re.match(r'^-?\d+(\.\d+)?$', val):
+                                        row_dict[match] = val
+                                    else:
+                                        row_dict[match] = f"'{val.replace("'", "''")}'"
                                 else:
-                                    row_dict[match] = f"'{val.replace("'", "''")}'"
-                            else:
-                                row_dict[match] = "NULL"
+                                    row_dict[match] = "NULL"
+
+                            i = j if len(analyte_lines) > 1 else i + 1
 
                         row_values = [row_dict.get(field, "NULL") for field in target_fields]
                         rows.append(f"           ({', '.join(row_values)})")
