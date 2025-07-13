@@ -8,7 +8,7 @@ import logging
 
 FIELD_MAP = {
     "ds-pfas": [
-        "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
+        "Sampling Date/Time","Sample Location","Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
         "Perfluoroheptane sulfonic acid", "Perfluorooctane sulfonic acid", "Perfluorodecane sulfonic acid",
         "Perfluorobutanoic acid", "Perfluoropentanoic acid", "Perfluorohexanoic acid", "Perfluoroheptanoic",
         "Perfluorooctanoic acid", "Perfluorononanoic acid", "Perfluorodecanoic acid", "Perfluoroundecanoic acid",
@@ -51,33 +51,30 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(json.dumps({"error": "Invalid or missing query_type"}), status_code=400)
 
         target_fields = FIELD_MAP[query_type]
-        insert_rows = []
+        field_lookup = {normalize(f): f for f in target_fields}
+        wide_table = {}  # {sample_location: {field_name: value}}
 
         with pdfplumber.open(BytesIO(file_content)) as pdf:
-            for page_index, page in enumerate(pdf.pages):
+            for page in pdf.pages:
                 tables = page.extract_tables()
-                for table_index, table in enumerate(tables):
+                for table in tables:
                     if not table or len(table) < 2:
                         continue
 
-                    # First row = sample location headers from column 3 onward
                     sample_locations = table[0][3:]
-                    if not sample_locations or all(not s for s in sample_locations):
+                    if not sample_locations:
                         continue
 
-                    logging.info(f"Sample locations found: {sample_locations}")
-
-                    for row_index, row in enumerate(table[1:]):
+                    for row in table[1:]:
                         if not row or len(row) < 4:
                             continue
 
-                        data_label = row[0]
-                        if not data_label:
+                        raw_field = row[0]
+                        if not raw_field:
                             continue
 
-                        matched_field = next(
-                            (f for f in target_fields if normalize(f) in normalize(data_label)), None
-                        )
+                        norm_field = normalize(raw_field)
+                        matched_field = field_lookup.get(norm_field)
                         if not matched_field:
                             continue
 
@@ -85,28 +82,38 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             if not sample_location:
                                 continue
 
+                            col_index = i + 3
                             val = "NULL"
-                            col_index = i + 3  # data starts from col 3
                             if col_index < len(row):
-                                raw = row[col_index]
-                                if raw:
-                                    raw = raw.strip()
-                                    if raw not in ["", "-"]:
-                                        if re.match(r'^-?\d+(\.\d+)?$', raw):
-                                            val = raw
+                                raw_val = row[col_index]
+                                if raw_val:
+                                    raw_val = raw_val.strip()
+                                    if raw_val not in ["", "-"]:
+                                        if re.match(r'^-?\d+(\.\d+)?$', raw_val):
+                                            val = raw_val
                                         else:
-                                            val = f"'{raw.replace('\'', '\'\'')}'"
+                                            val = f"'{raw_val.replace('\'', '\'\'')}'"
 
-                            insert_rows.append(f"('{sample_location}', '{matched_field}', {val})")
+                            sample_location = sample_location.strip()
+                            if sample_location not in wide_table:
+                                wide_table[sample_location] = {}
+                            wide_table[sample_location][matched_field] = val
 
-        if not insert_rows:
+        if not wide_table:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
 
-        sql_query = (
-            "INSERT INTO {table} ([Sample Location], [Analyte], [Value])\nVALUES\n  "
-            + ",\n  ".join(insert_rows)
-            + ";"
-        ).format(table=query_type)
+        # Prepare SQL INSERT
+        columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
+        insert_prefix = f"INSERT INTO [Jackson].[{query_type.upper()}]\n           ({columns_sql})\n     VALUES"
+
+        insert_rows = []
+        for location, field_values in wide_table.items():
+            row_values = []
+            for f in target_fields:
+                row_values.append(field_values.get(f, "NULL"))
+            insert_rows.append(f"           ({', '.join(row_values)})")
+
+        sql_query = insert_prefix + "\n" + ",\n".join(insert_rows) + ";"
 
         return func.HttpResponse(
             json.dumps({"query": sql_query}),
