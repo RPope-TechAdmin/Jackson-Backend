@@ -8,7 +8,7 @@ import logging
 
 FIELD_MAP = {
     "ds-pfas": [
-        "File Name"
+        "File Name",
         "Sample Location",
         "Sampling Date/Time",
         "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
