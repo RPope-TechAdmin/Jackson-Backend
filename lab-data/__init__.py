@@ -21,7 +21,7 @@ FIELD_MAP = {
         "N-Ethyl perfluorooctane sulfonamidoacetic acid", "4:2 Fluorotelomer sulfonic acid",
         "6:2 Fluorotelomer sulfonic acid", "8:2 Fluorotelomer sulfonic acid",
         "10:2 Fluorotelomer sulfonic acid", "Sum of PFAS", "Sum of PFHxS and PFOS",
-        "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates", "Sum of TOP C4 - C14 as Fluorine",
+        "Sum of TOP C4 - C14 Carboxylates and C4 - C8 Sulfonates", "Sum of TOP C4 - C14 as Fluorine",
         "13C4-PFOS", "13C8-PFOA"
     ]
 }
