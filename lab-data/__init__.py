@@ -26,15 +26,24 @@ FIELD_MAP = {
     ]
 }
 
-# Abbreviation-to-full-name mapping
 ABBREV_TO_FULL = {
     "mefosa": "N-Methyl perfluorooctane sulfonamide",
     "etfosa": "N-Ethyl perfluorooctane sulfonamide",
     "mefose": "N-Methyl perfluorooctane sulfonamidoethanol",
     "etfose": "N-Ethyl perfluorooctane sulfonamidoethanol",
-    "2355319": "N-Methyl perfluorooctane sulfonamidoacetic acid",
-    "2991506": "N-Ethyl perfluorooctane sulfonamidoacetic acid"
+    "mefosaa": "N-Methyl perfluorooctane sulfonamidoacetic acid",
+    "etfosaa": "N-Ethyl perfluorooctane sulfonamidoacetic acid"
 }
+
+CAS_TO_FULL = {
+    "2355-31-9": "N-Methyl perfluorooctane sulfonamidoacetic acid",  # MeFOSAA
+    "2991-50-6": "N-Ethyl perfluorooctane sulfonamidoacetic acid",   # EtFOSAA
+    "31506-32-8": "N-Methyl perfluorooctane sulfonamide",             # MeFOSA
+    "4151-50-2": "N-Ethyl perfluorooctane sulfonamide",              # EtFOSA
+    "24448-09-7": "N-Methyl perfluorooctane sulfonamidoethanol",     # MeFOSAE
+    "1691-99-2": "N-Ethyl perfluorooctane sulfonamidoethanol"        # EtFOSAE
+}
+
 
 def normalize(text):
     return re.sub(r'[^\w\s]', '', text).lower().strip()
@@ -133,16 +142,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             # Strict match first
                             match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
 
-                            if not match:
-                                abbrev_found = re.findall(r'\b[a-z]{2,6}\b', normalized_analyte)
-                                for abbrev in abbrev_found:
-                                    if abbrev in ABBREV_TO_FULL:
-                                        full_name = ABBREV_TO_FULL[abbrev]
-                                        if full_name in analyte_fields:
-                                            match = full_name
-                                            logging.info(f"Abbreviation matched: {abbrev} → {full_name}")
-                                            break
-
                             # Then fuzzy fallback if analyte is long enough
                             if not match and len(normalized_analyte) > 10:
                                 match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
@@ -153,6 +152,28 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 "sampling_datetime": sample_datetime,
                                 "column_index": col_index + 3
                             })
+
+                            # Match abbreviation if fuzzy fails
+                            if not match:
+                                abbrev_found = re.findall(r'\b[a-z]{2,6}\b', normalized_analyte)
+                                for abbrev in abbrev_found:
+                                    if abbrev in ABBREV_TO_FULL:
+                                        full_name = ABBREV_TO_FULL[abbrev]
+                                        if full_name in analyte_fields:
+                                            match = full_name
+                                            logging.info(f"Abbreviation matched: {abbrev} → {full_name}")
+                                            break
+                            
+                            # Match on CAS number if abbreviation fails
+                            if not match:
+                                cas_hits = re.findall(r'\b\d{2,7}-\d{2}-\d\b', analyte)
+                                for cas in cas_hits:
+                                    if cas in CAS_TO_FULL:
+                                        full_name = CAS_TO_FULL[cas]
+                                        if full_name in analyte_fields:
+                                            match = full_name
+                                            logging.info(f"CAS matched: {cas} → {full_name}")
+                                            break
 
                             if not match:
                                 logging.warning(f"Unmatched analyte: '{analyte}' (normalized: '{normalized_analyte}')")
