@@ -30,8 +30,8 @@ FIELD_MAP = {
 ABBREV_TO_FULL = {
     "mefosa": "N-Methyl perfluorooctane sulfonamide",
     "etfosa": "N-Ethyl perfluorooctane sulfonamide",
-    "mefosae": "N-Methyl perfluorooctane sulfonamidoethanol",
-    "etfosae": "N-Ethyl perfluorooctane sulfonamidoethanol",
+    "mefose": "N-Methyl perfluorooctane sulfonamidoethanol",
+    "etfose": "N-Ethyl perfluorooctane sulfonamidoethanol",
     "mefosaa": "N-Methyl perfluorooctane sulfonamidoacetic acid",
     "etfosaa": "N-Ethyl perfluorooctane sulfonamidoacetic acid"
 }
@@ -63,7 +63,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         target_fields = FIELD_MAP[query_type]
         analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
-        normalized_analytes = [normalize(f) for f in analyte_fields]
         combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
 
         rows = []
@@ -134,18 +133,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             # Strict match first
                             match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
 
-                            # Then fuzzy fallback if analyte is long enough
-                            if not match and len(normalized_analyte) > 10:
-                                match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
-
-                            logging.info({
-                                "analyte_raw": analyte,
-                                "matched": match,
-                                "sample_location": sample_location,
-                                "sampling_datetime": sample_datetime,
-                                "column_index": col_index + 3
-                            })
-
                             if not match:
                                 abbrev_found = re.findall(r'\b[a-z]{2,6}\b', normalized_analyte)
                                 for abbrev in abbrev_found:
@@ -156,6 +143,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                             logging.info(f"Abbreviation matched: {abbrev} → {full_name}")
                                             break
 
+                            # Then fuzzy fallback if analyte is long enough
+                            if not match and len(normalized_analyte) > 10:
+                                match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
                             logging.info({
                                 "analyte_raw": analyte,
                                 "matched": match,
