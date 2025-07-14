@@ -44,7 +44,6 @@ CAS_TO_FULL = {
     "1691-99-2": "N-Ethyl perfluorooctane sulfonamidoethanol"        # EtFOSE
 }
 
-
 def normalize(text):
     if not text:
         return ''
@@ -53,6 +52,10 @@ def normalize(text):
     text = re.sub(r'[^\w\s]', '', text)
     text = re.sub(r'\s+', ' ', text)
     return text.lower().strip()
+
+PARTIAL_MATCH_MAP = {
+      normalize("Sum of TOP C4 - C14 Carboxylates and C4"): "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates"
+}
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -123,22 +126,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 i += 1
                                 continue
 
-                            analyte_lines = []
-                            j = i+1
-                            max_lines = 5  # limit to prevent runaway merging
-                            while j < len(table) and len(analyte_lines) < max_lines:
-                                cell = table[j][0]
-                                if not cell or not cell.strip():
+                            analyte_lines = [row[0].strip()] if row[0] else []
+                            j = i + 1
+                            while j < len(table):
+                                next_line = table[j][0] if table[j][0] else ''
+                                next_line_stripped = next_line.strip()
+                                if next_line_stripped == '' or re.match(r'^[A-Za-z()\\d\\s\\-]+$', next_line_stripped):
+                                    analyte_lines.append(next_line_stripped)
+                                    j += 1
+                                else:
                                     break
-                                cell_text = cell.strip()
-
-                                # Stop at numeric-looking lines or results
-                                if re.match(r'^[-<]?\d', cell_text):
-                                    break
-
-                                analyte_lines.append(cell_text)
+                                analyte_lines.append(table[j][0].strip() if table[j][0] else '')
                                 j += 1
-
 
                             analyte = ' '.join(analyte_lines).strip()
                             normalized_analyte = normalize(analyte)
@@ -151,6 +150,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             # Strict match first
                             match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
+
+                            # Check for known partial match
+                            if not match:
+                                if normalized_analyte in PARTIAL_MATCH_MAP:
+                                    match = PARTIAL_MATCH_MAP[normalized_analyte]
+                                    logging.info(f"Partial match override: '{analyte}' → '{match}'")
+                                else:
+                                    match = None
 
                             # Then fuzzy fallback if analyte is long enough
                             if not match and len(normalized_analyte) > 10:
