@@ -55,7 +55,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
         normalized_analytes = [normalize(f) for f in analyte_fields]
         combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
-        
+
         rows = []
         logging.info("Opening PDF...")
         with pdfplumber.open(BytesIO(file_content)) as pdf:
@@ -83,10 +83,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         sample_location = sample_location.strip()
                         sample_datetime = date_val.strip() if date_val else "NULL"
 
-                        row_dict = {
-                            "Sample Location": f"'{sample_location}'",
-                            "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
-                        }
+                        key = (sample_location, sample_datetime)
+                        if key not in combined_rows:
+                            combined_rows[key] = {
+                                "Sample Location": f"'{sample_location}'",
+                                "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
+                            }
+
+                        row_dict = combined_rows[key]
 
                         i = 3
                         while i < len(table):
@@ -131,7 +135,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         row_values = [row_dict.get(field, "NULL") for field in target_fields]
                         rows.append(f"           ({', '.join(row_values)})")
 
-        if not rows:
+        if not combined_rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
 
         rows = []
