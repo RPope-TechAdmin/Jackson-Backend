@@ -32,7 +32,8 @@ ABBREV_TO_FULL = {
     "mefose": "N-Methyl perfluorooctane sulfonamidoethanol",
     "etfose": "N-Ethyl perfluorooctane sulfonamidoethanol",
     "mefosaa": "N-Methyl perfluorooctane sulfonamidoacetic acid",
-    "etfosaa": "N-Ethyl perfluorooctane sulfonamidoacetic acid"
+    "etfosaa": "N-Ethyl perfluorooctane sulfonamidoacetic acid",
+    "sum of top c4  c14 carboxylates and c4 c8 sulfonates": "Sum of TOP C4 - C14 Carboxylates and C4 - C8 Sulfonates"
 }
 
 CAS_TO_FULL = {
