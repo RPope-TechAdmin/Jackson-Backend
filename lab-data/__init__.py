@@ -222,8 +222,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             rows.append(f"           ({', '.join(row_values)})")
 
         try:
-            columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
-            sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
+            columns_sql = ", ".join([f"[{f}]" for f in target_fields])
+            sql = f"INSERT INTO [Jackson].[DSPFAS] ({columns_sql}) VALUES" + ", ".join(rows) + ";"
 
             logging.info("Generated SQL query successfully.")
             return func.HttpResponse(
