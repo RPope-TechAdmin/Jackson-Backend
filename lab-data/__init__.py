@@ -5,6 +5,7 @@ import pdfplumber
 import json
 import re
 import logging
+import time
 
 FIELD_MAP = {
     "ds-pfas": [
@@ -54,22 +55,22 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         target_fields = FIELD_MAP[query_type]
         analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
         normalized_analytes = [normalize(f) for f in analyte_fields]
-        combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
+        combined_rows = {}
 
-        rows = []
         logging.info("Opening PDF...")
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page_number, page in enumerate(pdf.pages):
                 logging.info(f"Processing page {page_number + 1}...")
+                page_start_time = time.time()
+
                 tables = page.extract_tables()
                 for t_idx, table in enumerate(tables):
                     if not table or len(table) < 3:
                         continue
 
-                    # Skip tables that contain no known analytes
                     analyte_labels = [normalize(r[0]) for r in table[3:] if r and r[0]]
-                    if not any(any(normalize(f) in a for f in analyte_fields) for a in analyte_labels):
-                        logging.info(f"Skipping table {t_idx} (no analytes found)")
+                    if not any(a in normalized_analytes for a in analyte_labels):
+                        logging.info(f"Skipping table {t_idx} (no known analytes)")
                         continue
 
                     sample_locations = table[0][3:]
@@ -101,35 +102,32 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             analyte_lines = []
                             j = i
-                            while j < len(table):
+                            max_analyte_rows = 5
+                            while j < len(table) and (j - i) < max_analyte_rows:
                                 cell = table[j][0]
                                 if not cell or not cell.strip():
                                     break
                                 cell_text = cell.strip()
-                                # Stop if it looks like a data value (starts with a number or contains only a unit)
-                                if re.match(r'^[-<]?\d', cell_text) or re.match(r'^\(?\d+(\.\d+)?( ng\/L)?\)?$', cell_text):
+                                if re.match(r'^[-<]?\d', cell_text):
                                     break
                                 analyte_lines.append(cell_text)
-                                
-                                # Look ahead: stop if next row is a new analyte or empty
+
+                                # lookahead
                                 if j + 1 < len(table):
                                     next_cell = table[j + 1][0]
-                                    if not next_cell or re.match(r'^[-<]?\d', next_cell.strip()):
+                                    if next_cell and re.match(r'^[-<]?\d', next_cell.strip()):
                                         break
+                                j += 1
 
+                            if j == i:
                                 j += 1
 
                             analyte = ' '.join(analyte_lines).strip()
                             normalized_analyte = normalize(analyte)
-                            match = next((f for f in analyte_fields if normalized_analyte == normalize(f)), None)
 
-                            # If no exact match, try looser comparison
+                            match = next((f for f in analyte_fields if normalized_analyte == normalize(f)), None)
                             if not match:
                                 match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
-
-
-                            analyte = ' '.join(analyte_lines).strip()
-                            match = next((f for f in analyte_fields if normalize(analyte) in normalize(f) or normalize(f) in normalize(analyte)), None)
 
                             logging.info({
                                 "analyte_raw": analyte,
@@ -139,24 +137,26 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 "column_index": col_index + 3
                             })
 
-                            if match:
-                                val_row = table[j - 1]
-                                val = val_row[col_index + 3] if col_index + 3 < len(val_row) else None
-                                if val:
-                                    val = val.strip()
-                                    if val in ["", "-", "----"]:
-                                        row_dict[match] = "NULL"
-                                    elif re.match(r'^-?\d+(\.\d+)?$', val):
-                                        row_dict[match] = val
-                                    else:
-                                        row_dict[match] = f"'{val.replace("<", "")}'"
-                                else:
+                            if not match:
+                                logging.warning(f"Unmatched analyte: '{analyte}' (normalized: '{normalized_analyte}')")
+                                i = j
+                                continue
+
+                            val_row = table[j - 1] if j - 1 < len(table) else table[i]
+                            val = val_row[col_index + 3] if col_index + 3 < len(val_row) else None
+
+                            if val:
+                                val = val.strip()
+                                if val in ["", "-", "----"]:
                                     row_dict[match] = "NULL"
+                                elif re.match(r'^-?\d+(\.\d+)?$', val.replace("<", "")):
+                                    row_dict[match] = val.replace("<", "")
+                                else:
+                                    row_dict[match] = f"'{val.replace('<', '')}'"
+                            else:
+                                row_dict[match] = "NULL"
 
                             i = j
-
-                        row_values = [row_dict.get(field, "NULL") for field in target_fields]
-                        rows.append(f"           ({', '.join(row_values)})")
 
         if not combined_rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
@@ -170,6 +170,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
             sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
 
+            logging.info("Generated SQL query successfully.")
             return func.HttpResponse(
                 json.dumps({"query": sql}),
                 mimetype="application/json",
@@ -182,12 +183,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 mimetype="application/json",
                 status_code=500
             )
+
     except Exception as e:
-        logging.exception("Failed to build SQL query")
+        logging.exception("Unhandled exception")
         return func.HttpResponse(
-            json.dumps({"error": "SQL build failed", "details": str(e)}),
-            mimetype="application/json",
+            json.dumps({"error": "Internal server error", "details": str(e)}),
             status_code=500
         )
-
-
