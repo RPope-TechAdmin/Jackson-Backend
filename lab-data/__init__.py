@@ -32,8 +32,7 @@ ABBREV_TO_FULL = {
     "mefose": "N-Methyl perfluorooctane sulfonamidoethanol",
     "etfose": "N-Ethyl perfluorooctane sulfonamidoethanol",
     "mefosaa": "N-Methyl perfluorooctane sulfonamidoacetic acid",
-    "etfosaa": "N-Ethyl perfluorooctane sulfonamidoacetic acid",
-    "sum of top c4  c14 carboxylates and c4 c8 sulfonates": "Sum of TOP C4 - C14 Carboxylates and C4 - C8 Sulfonates"
+    "etfosaa": "N-Ethyl perfluorooctane sulfonamidoacetic acid"
 }
 
 CAS_TO_FULL = {
@@ -47,7 +46,13 @@ CAS_TO_FULL = {
 
 
 def normalize(text):
-    return re.sub(r'[^\w\s]', '', text).lower().strip()
+    if not text:
+        return ''
+    # Replace long dash sequences with space, remove punctuation, and collapse spaces
+    text = re.sub(r'[-–—]+', ' ', text)
+    text = re.sub(r'[^\w\s]', '', text)
+    text = re.sub(r'\s+', ' ', text)
+    return text.lower().strip()
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -118,17 +123,20 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 i += 1
                                 continue
 
-                            analyte_lines = [row[0].strip()] if row[0] else []
-                            j = i + 1
-                            while j < len(table):
-                                next_line = table[j][0] if table[j][0] else ''
-                                next_line_stripped = next_line.strip()
-                                if next_line_stripped == '' or re.match(r'^[A-Za-z()\\d\\s\\-]+$', next_line_stripped):
-                                    analyte_lines.append(next_line_stripped)
-                                    j += 1
-                                else:
+                            analyte_lines = []
+                            j = i
+                            max_lines = 5  # limit to prevent runaway merging
+                            while j < len(table) and len(analyte_lines) < max_lines:
+                                cell = table[j][0]
+                                if not cell or not cell.strip():
                                     break
-                                analyte_lines.append(table[j][0].strip() if table[j][0] else '')
+                                cell_text = cell.strip()
+
+                                # Stop at numeric-looking lines or results
+                                if re.match(r'^[-<]?\d', cell_text):
+                                    break
+
+                                analyte_lines.append(cell_text)
                                 j += 1
 
                             analyte = ' '.join(analyte_lines).strip()
