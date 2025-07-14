@@ -54,7 +54,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         target_fields = FIELD_MAP[query_type]
         analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
         normalized_analytes = [normalize(f) for f in analyte_fields]
-        combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
 
         rows = []
         logging.info("Opening PDF...")
@@ -83,14 +82,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         sample_location = sample_location.strip()
                         sample_datetime = date_val.strip() if date_val else "NULL"
 
-                        key = (sample_location, sample_datetime)
-                        if key not in combined_rows:
-                            combined_rows[key] = {
-                                "Sample Location": f"'{sample_location}'",
-                                "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
-                            }
-
-                        row_dict = combined_rows[key]
+                        row_dict = {
+                            "Sample Location": f"'{sample_location}'",
+                            "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
+                        }
 
                         i = 3
                         while i < len(table):
@@ -101,14 +96,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             analyte_lines = [row[0].strip()] if row[0] else []
                             j = i + 1
-                            while j < len(table):
-                                next_line = table[j][0] if table[j][0] else ''
-                                next_line_stripped = next_line.strip()
-                                if next_line_stripped == '' or re.match(r'^[A-Za-z()\\d\\s\\-]+$', next_line_stripped):
-                                    analyte_lines.append(next_line_stripped)
-                                    j += 1
-                                else:
-                                    break
+                            while j < len(table) and (not table[j][0] or table[j][0].strip() == ''):
                                 analyte_lines.append(table[j][0].strip() if table[j][0] else '')
                                 j += 1
 
@@ -142,17 +130,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         row_values = [row_dict.get(field, "NULL") for field in target_fields]
                         rows.append(f"           ({', '.join(row_values)})")
 
-        if not combined_rows:
+        if not rows:
             return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
-
-        rows = []
-        for row_dict in combined_rows.values():
-            row_values = [row_dict.get(field, "NULL") for field in target_fields]
-            rows.append(f"           ({', '.join(row_values)})")
 
         columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
         sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
-
 
         return func.HttpResponse(json.dumps({"query": sql}), mimetype="application/json", status_code=200)
 
