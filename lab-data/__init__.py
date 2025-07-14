@@ -75,7 +75,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 match = re.search(r'filename="(.+?)"', content_disp)
                 if match:
                     file_name = match.group(1)
-                elif 'name="query_type"' in content_disp:
+            
+            elif 'name="query_type"' in content_disp:
                     query_type = part.text.strip().lower()
 
         if not file_content:
