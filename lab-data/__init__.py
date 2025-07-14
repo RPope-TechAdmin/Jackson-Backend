@@ -106,18 +106,26 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 if not cell or not cell.strip():
                                     break
                                 cell_text = cell.strip()
-                                # Stop if it looks like a new analyte row (starts with a number or is clearly not text)
-                                if re.match(r'^\d', cell_text):
+                                # Stop if it looks like a data value (starts with a number or contains only a unit)
+                                if re.match(r'^[-<]?\d', cell_text) or re.match(r'^\(?\d+(\.\d+)?( ng\/L)?\)?$', cell_text):
                                     break
                                 analyte_lines.append(cell_text)
-                                # Look ahead: stop if next row's first cell is numeric or empty
+                                
+                                # Look ahead: stop if next row is a new analyte or empty
                                 if j + 1 < len(table):
                                     next_cell = table[j + 1][0]
-                                    if next_cell and re.match(r'^\d', next_cell.strip()):
+                                    if not next_cell or re.match(r'^[-<]?\d', next_cell.strip()):
                                         break
+
                                 j += 1
 
                             analyte = ' '.join(analyte_lines).strip()
+                            normalized_analyte = normalize(analyte)
+                            match = next((f for f in analyte_fields if normalized_analyte == normalize(f)), None)
+
+                            # If no exact match, try looser comparison
+                            if not match:
+                                match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
 
 
                             analyte = ' '.join(analyte_lines).strip()
@@ -158,15 +166,28 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             row_values = [row_dict.get(field, "NULL") for field in target_fields]
             rows.append(f"           ({', '.join(row_values)})")
 
-        columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
-        sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
+        try:
+            columns_sql = ",\n           ".join([f"[{f}]" for f in target_fields])
+            sql = f"INSERT INTO [Jackson].[DSPFAS]\n           ({columns_sql})\n     VALUES\n" + ",\n".join(rows) + ";"
 
-
-        return func.HttpResponse(json.dumps({"query": sql}), mimetype="application/json", status_code=200)
-
+            return func.HttpResponse(
+                json.dumps({"query": sql}),
+                mimetype="application/json",
+                status_code=200
+            )
+        except Exception as e:
+            logging.exception("Failed to build SQL query")
+            return func.HttpResponse(
+                json.dumps({"error": "SQL build failed", "details": str(e)}),
+                mimetype="application/json",
+                status_code=500
+            )
     except Exception as e:
-        logging.exception("Unhandled exception")
+        logging.exception("Failed to build SQL query")
         return func.HttpResponse(
-            json.dumps({"error": "Internal server error", "details": str(e)}),
+            json.dumps({"error": "SQL build failed", "details": str(e)}),
+            mimetype="application/json",
             status_code=500
         )
+
+
