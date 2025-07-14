@@ -124,7 +124,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 continue
 
                             analyte_lines = []
-                            j = i
+                            j = i+1
                             max_lines = 5  # limit to prevent runaway merging
                             while j < len(table) and len(analyte_lines) < max_lines:
                                 cell = table[j][0]
@@ -138,6 +138,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                                 analyte_lines.append(cell_text)
                                 j += 1
+
 
                             analyte = ' '.join(analyte_lines).strip()
                             normalized_analyte = normalize(analyte)
