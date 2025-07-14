@@ -8,6 +8,7 @@ import logging
 
 FIELD_MAP = {
     "ds-pfas": [
+        "File Name"
         "Sample Location",
         "Sampling Date/Time",
         "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
@@ -66,13 +67,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         multipart_data = decoder.MultipartDecoder(req.get_body(), content_type)
 
-        file_content, query_type = None, None
+        file_name, file_content, query_type = None, None, None
         for part in multipart_data.parts:
             content_disp = part.headers.get(b"Content-Disposition", b"").decode()
             if 'filename="' in content_disp and content_disp.endswith('.pdf"'):
                 file_content = part.content
-            elif 'name="query_type"' in content_disp:
-                query_type = part.text.strip().lower()
+                match = re.search(r'filename="(.+?)"', content_disp)
+                if match:
+                    file_name = match.group(1)
+                elif 'name="query_type"' in content_disp:
+                    query_type = part.text.strip().lower()
 
         if not file_content:
             return func.HttpResponse(json.dumps({"error": "No PDF file uploaded"}), status_code=400)
@@ -113,6 +117,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         key = (sample_location, sample_datetime)
                         if key not in combined_rows:
                             combined_rows[key] = {
+                                "File Name": f"'{file_name}'" if file_name else "NULL",
                                 "Sample Location": f"'{sample_location}'",
                                 "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
                             }
