@@ -99,18 +99,26 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 i += 1
                                 continue
 
-                            analyte_lines = [row[0].strip()] if row[0] else []
-                            j = i + 1
+                            analyte_lines = []
+                            j = i
                             while j < len(table):
-                                next_line = table[j][0] if table[j][0] else ''
-                                next_line_stripped = next_line.strip()
-                                if next_line_stripped == '' or re.match(r'^[A-Za-z()\\d\\s\\-]+$', next_line_stripped):
-                                    analyte_lines.append(next_line_stripped)
-                                    j += 1
-                                else:
+                                cell = table[j][0]
+                                if not cell or not cell.strip():
                                     break
-                                analyte_lines.append(table[j][0].strip() if table[j][0] else '')
+                                cell_text = cell.strip()
+                                # Stop if it looks like a new analyte row (starts with a number or is clearly not text)
+                                if re.match(r'^\d', cell_text):
+                                    break
+                                analyte_lines.append(cell_text)
+                                # Look ahead: stop if next row's first cell is numeric or empty
+                                if j + 1 < len(table):
+                                    next_cell = table[j + 1][0]
+                                    if next_cell and re.match(r'^\d', next_cell.strip()):
+                                        break
                                 j += 1
+
+                            analyte = ' '.join(analyte_lines).strip()
+
 
                             analyte = ' '.join(analyte_lines).strip()
                             match = next((f for f in analyte_fields if normalize(analyte) in normalize(f) or normalize(f) in normalize(analyte)), None)
