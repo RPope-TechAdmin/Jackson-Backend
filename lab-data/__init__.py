@@ -5,7 +5,6 @@ import pdfplumber
 import json
 import re
 import logging
-import time
 
 FIELD_MAP = {
     "ds-pfas": [
@@ -63,10 +62,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(json.dumps({"error": "Invalid or missing query_type"}), status_code=400)
 
         target_fields = FIELD_MAP[query_type]
-        analyte_fields = target_fields[2:]
+        analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
         normalized_analytes = [normalize(f) for f in analyte_fields]
-        combined_rows = {}
+        combined_rows = {}  # key = (sample_location, sample_datetime), value = field dict
 
+        rows = []
         logging.info("Opening PDF...")
         with pdfplumber.open(BytesIO(file_content)) as pdf:
             for page_number, page in enumerate(pdf.pages):
@@ -76,8 +76,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     if not table or len(table) < 3:
                         continue
 
+                    # Skip tables that contain no known analytes
                     analyte_labels = [normalize(r[0]) for r in table[3:] if r and r[0]]
-                    if not any(a in normalized_analytes for a in analyte_labels):
+                    if not any(any(normalize(f) in a for f in analyte_fields) for a in analyte_labels):
+                        logging.info(f"Skipping table {t_idx} (no analytes found)")
                         continue
 
                     sample_locations = table[0][3:]
@@ -107,35 +109,34 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 i += 1
                                 continue
 
-                            analyte_lines = []
-                            j = i
-                            max_analyte_rows = 5
-                            while j < len(table) and (j - i) < max_analyte_rows:
-                                cell = table[j][0]
-                                if not cell or not cell.strip():
+                            analyte_lines = [row[0].strip()] if row[0] else []
+                            j = i + 1
+                            while j < len(table):
+                                next_line = table[j][0] if table[j][0] else ''
+                                next_line_stripped = next_line.strip()
+                                if next_line_stripped == '' or re.match(r'^[A-Za-z()\\d\\s\\-]+$', next_line_stripped):
+                                    analyte_lines.append(next_line_stripped)
+                                    j += 1
+                                else:
                                     break
-                                cell_text = cell.strip()
-                                if re.match(r'^[-<]?\d', cell_text):
-                                    break
-                                analyte_lines.append(cell_text)
-
-                                if j + 1 < len(table):
-                                    next_cell = table[j + 1][0]
-                                    if next_cell and re.match(r'^[-<]?\d', next_cell.strip()):
-                                        break
-
-                                j += 1
-
-                            if j == i:
+                                analyte_lines.append(table[j][0].strip() if table[j][0] else '')
                                 j += 1
 
                             analyte = ' '.join(analyte_lines).strip()
-                            normalized_analyte = normalize(analyte)
+                            normalized_analyte=normalize(analyte)
 
-                            match = next((f for f in analyte_fields if normalized_analyte == normalize(f)), None)
+                            match = next((f for f in analyte_fields if normalize(analyte) in normalize(f) or normalize(f) in normalize(analyte)), None)
 
                             if not match:
                                 match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
+
+                            logging.info({
+                                "analyte_raw": analyte,
+                                "matched": match,
+                                "sample_location": sample_location,
+                                "sampling_datetime": sample_datetime,
+                                "column_index": col_index + 3
+                            })
 
                             if not match:
                                 abbrev_found = re.findall(r'\b[a-z]{2,6}\b', normalized_analyte)
