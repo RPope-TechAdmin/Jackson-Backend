@@ -123,11 +123,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 j += 1
 
                             analyte = ' '.join(analyte_lines).strip()
-                            normalized_analyte=normalize(analyte)
+                            normalized_analyte = normalize(analyte)
 
-                            match = next((f for f in analyte_fields if normalize(analyte) in normalize(f) or normalize(f) in normalize(analyte)), None)
+                            # Skip blank or non-analyte labels
+                            if not analyte or normalized_analyte in ["", "result", "results", "cas", "parameter"]:
+                                logging.info(f"Skipping non-analyte label: '{analyte}'")
+                                i = j
+                                continue
 
-                            if not match:
+                            # Strict match first
+                            match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
+
+                            # Then fuzzy fallback if analyte is long enough
+                            if not match and len(normalized_analyte) > 10:
                                 match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
 
                             logging.info({
