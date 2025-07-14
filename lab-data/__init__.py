@@ -21,7 +21,7 @@ FIELD_MAP = {
         "N-Ethyl perfluorooctane sulfonamidoacetic acid", "4:2 Fluorotelomer sulfonic acid",
         "6:2 Fluorotelomer sulfonic acid", "8:2 Fluorotelomer sulfonic acid",
         "10:2 Fluorotelomer sulfonic acid", "Sum of PFAS", "Sum of PFHxS and PFOS",
-        "Sum of TOP C4  C14 Carboxylates and C4 C8 Sulfonates", "Sum of TOP C4 - C14 as Fluorine",
+        "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates", "Sum of TOP C4 - C14 as Fluorine",
         "13C4-PFOS", "13C8-PFOA"
     ]
 }
@@ -40,8 +40,8 @@ CAS_TO_FULL = {
     "2991-50-6": "N-Ethyl perfluorooctane sulfonamidoacetic acid",   # EtFOSAA
     "31506-32-8": "N-Methyl perfluorooctane sulfonamide",             # MeFOSA
     "4151-50-2": "N-Ethyl perfluorooctane sulfonamide",              # EtFOSA
-    "24448-09-7": "N-Methyl perfluorooctane sulfonamidoethanol",     # MeFOSAE
-    "1691-99-2": "N-Ethyl perfluorooctane sulfonamidoethanol"        # EtFOSAE
+    "24448-09-7": "N-Methyl perfluorooctane sulfonamidoethanol",     # MeFOSE
+    "1691-99-2": "N-Ethyl perfluorooctane sulfonamidoethanol"        # EtFOSE
 }
 
 
