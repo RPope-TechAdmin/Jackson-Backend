@@ -101,7 +101,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             analyte_lines = [row[0].strip()] if row[0] else []
                             j = i + 1
-                            while j < len(table) and (not table[j][0] or table[j][0].strip() == ''):
+                            while j < len(table):
+                                next_line = table[j][0] if table[j][0] else ''
+                                next_line_stripped = next_line.strip()
+                                if next_line_stripped == '' or re.match(r'^[A-Za-z()\\d\\s\\-]+$', next_line_stripped):
+                                    analyte_lines.append(next_line_stripped)
+                                    j += 1
+                                else:
+                                    break
                                 analyte_lines.append(table[j][0].strip() if table[j][0] else '')
                                 j += 1
 
