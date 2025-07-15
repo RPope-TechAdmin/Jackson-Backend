@@ -93,7 +93,6 @@ CAS_TO_FULL = {
     "95-95-4": "2,4,5-Trichlorophenol",
     "87-86-5": "Pentachlorophenol",
     "C6_C10": "TRH NEPMC6 - C10 Fraction C6_C10",
-    "C6_C10-BTEX": "TRH NEPMC6 - C10 Fraction minus BTEX",
     "71-43-2": "Benzene",
     "108-88-3": "Toluene",
     "100-41-4": "Ethylbenzene",
@@ -131,7 +130,8 @@ PARTIAL_MATCH_MAP = {
       normalize(">C16 - C34 Fraction"): "TRH C16 - C34 Fraction",
       normalize(">C34 - C40 Fraction"): "TRH C34 - C40 Fraction",
       normalize("^ >C10 - C40 Fraction (sum)"): "TRH C10 - C40 Fraction (sum)",
-      normalize(">C10 - C16 Fraction minus Naphthalene (F2)"): "TRH C10 - C16 Fraction minus Naphthalene"
+      normalize(">C10 - C16 Fraction minus Naphthalene (F2)"): "TRH C10 - C16 Fraction minus Naphthalene",
+      normalize("^ C6 - C10 Fraction minus BTEX C6_C10-BTEX(F1)"): "TRH NEPMC6 - C10 Fraction minus BTEX"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
