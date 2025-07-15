@@ -2,6 +2,7 @@ import azure.functions as func
 from requests_toolbelt.multipart import decoder
 from io import BytesIO
 import pdfplumber
+import os
 import json
 import re
 import logging
