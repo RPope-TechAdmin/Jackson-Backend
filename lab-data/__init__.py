@@ -5,6 +5,16 @@ import pdfplumber
 import json
 import re
 import logging
+import pyodbc
+from sqlalchemy import create_engine, text
+
+cors_headers = {
+    "Access-Control-Allow-Origin": "https://delightful-tree-0888c340f.1.azurestaticapps.net",
+    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
+    "Access-Control-Allow-Headers": "Content-Type, Accept",
+    "Access-Control-Max-Age": "86400"
+}
+
 
 FIELD_MAP = {
     "ds-pfas": [
@@ -303,22 +313,40 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             row_values = [row_dict.get(field, "NULL") for field in target_fields]
             rows.append(f"           ({', '.join(row_values)})")
 
-        try:
-            columns_sql = ", ".join([f"[{f}]" for f in target_fields])
-            sql = f"INSERT INTO [Jackson].[DSPFAS] ({columns_sql}) VALUES" + ", ".join(rows) + ";"
+        
+        columns_sql = ", ".join([f"[{f}]" for f in target_fields])
+        sql = f"INSERT INTO [Jackson].[DSPFAS] ({columns_sql}) VALUES" + ", ".join(rows) + ";"
 
-            logging.info("Generated SQL query successfully.")
-            return func.HttpResponse(
-                json.dumps({"query": sql}),
-                mimetype="application/json",
-                status_code=200
+        try:
+            username = os.environ["SQL_USER"]
+            password = os.environ["SQL_PASSWORD"]
+            server = os.environ["SQL_SERVER"]
+            db = os.environ["SQL_DB"]
+
+            connection_string = (
+                f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
+                "?driver=ODBC+Driver+17+for+SQL+Server"
+                "&encrypt=yes"
+                "&trustServerCertificate=no"
             )
-        except Exception as e:
-            logging.exception("Failed to build SQL query")
+
+            engine = create_engine(connection_string, connect_args={"autocommit": True})
+            with engine.connect() as conn:
+                conn.execute(text(sql))
+
+            logging.info("✅ Data inserted into SQL Server.")
             return func.HttpResponse(
-                json.dumps({"error": "SQL build failed", "details": str(e)}),
-                mimetype="application/json",
-                status_code=500
+                json.dumps({"status": "success", "inserted_rows": len(rows)}),
+                status_code=200,
+                mimetype="application/json"
+            )
+
+        except Exception as e:
+            logging.exception("❌ Database insert failed.")
+            return func.HttpResponse(
+                json.dumps({"error": "Database insert failed", "details": str(e)}),
+                status_code=500,
+                mimetype="application/json"
             )
 
     except Exception as e:
