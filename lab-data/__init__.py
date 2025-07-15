@@ -336,8 +336,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             db = os.environ["SQL_DB_LAB"]
 
             connection_string = (
-                f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
-                "?driver=ODBC+Driver+17+for+SQL+Server"
+                f"mssql+pytds://{username}:{password}@{server}/{db}"
                 "&encrypt=yes"
                 "&trustServerCertificate=no"
             )

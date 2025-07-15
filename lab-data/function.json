@@ -13,5 +13,6 @@
       "direction": "out",
       "name": "$return"
     }
-  ]
+  ],
+  "scriptFile": "__init__.py"
 }
