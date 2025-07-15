@@ -123,15 +123,15 @@ def normalize(text):
 PARTIAL_MATCH_MAP = {
       normalize("Sum of TOP C4 - C14 Carboxylates and C4"): "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates",
       normalize("^ C6 - C10 Fraction minus BTEX C6_C10-BTEX(F1)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize("C10 - C14 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize("C15 - C28 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize("C29 - C36 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize("^ C10 - C36 Fraction (sum)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize(">C10 - C16 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize(">C16 - C34 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize(">C34 - C40 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize("^ >C10 - C40 Fraction (sum)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
-      normalize(">C10 - C16 Fraction minus Naphthalene (F2)"): "TRH NEPMC6 - C10 Fraction minus BTEX"
+      normalize("C10 - C14 Fraction"): "TPH Silica C10 - C14 Fraction",
+      normalize("C15 - C28 Fraction"): "TPH Silica C15 - C28 Fraction",
+      normalize("C29 - C36 Fraction"): "TPH Silica C29 - C36 Fraction",
+      normalize("^ C10 - C36 Fraction (sum)"): "TPH Silica C10 - C36 Fraction (sum)",
+      normalize(">C10 - C16 Fraction"): "TRH C10 - C16 Fraction",
+      normalize(">C16 - C34 Fraction"): "TRH C16 - C34 Fraction",
+      normalize(">C34 - C40 Fraction"): "TRH C34 - C40 Fraction",
+      normalize("^ >C10 - C40 Fraction (sum)"): "TRH C10 - C40 Fraction (sum)",
+      normalize(">C10 - C16 Fraction minus Naphthalene (F2)"): "TRH C10 - C16 Fraction minus Naphthalene"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
