@@ -120,10 +120,10 @@ CAS_TO_FULL = {
     "460-00-4": "4-Bromofluorobenzene",
 }
 
-QUERY_TYPE_TO_DB = {
-    "ds-pfas": "DSPFAS",
-    "ds-int": "DSInt",
-    "ds-ext": "DSExt"
+QUERY_TYPE_TO_TABLE = {
+    "ds-pfas": "[Jackson].[DSPFAS]",
+    "ds-int": "[Jackson].[DSInt]",
+    "ds-ext": "[Jackson].[DSExt]"
 }
 
 def normalize(text):
@@ -320,26 +320,22 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             rows.append(f"           ({', '.join(row_values)})")
 
         
+        table_name = QUERY_TYPE_TO_TABLE.get(query_type)
+        if not table_name:
+            return func.HttpResponse(json.dumps({"error": f"Invalid query_type: {query_type}"}), status_code=400)
+
         columns_sql = ", ".join([f"[{f}]" for f in target_fields])
-        sql = f"INSERT INTO [Jackson].[DSPFAS] ({columns_sql}) VALUES" + ", ".join(rows) + ";"
+        sql = f"INSERT INTO {table_name} ({columns_sql}) VALUES" + ", ".join(rows) + ";"
+
 
         try:
-            target_db = QUERY_TYPE_TO_DB.get(query_type)
-            if not target_db:
-                return func.HttpResponse(
-                    json.dumps({"error": f"No database configured for query_type '{query_type}'"}),
-                    status_code=400,
-                    mimetype="application/json"
-                )
-
-            # Read credentials from environment
             username = os.environ["SQL_USER"]
             password = os.environ["SQL_PASSWORD"]
             server = os.environ["SQL_SERVER"]
+            db = os.environ["SQL_DB_LAB"]
 
-            # Build the dynamic connection string
             connection_string = (
-                f"mssql+pyodbc://{username}:{password}@{server}:1433/{target_db}"
+                f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
                 "?driver=ODBC+Driver+17+for+SQL+Server"
                 "&encrypt=yes"
                 "&trustServerCertificate=no"
