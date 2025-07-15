@@ -120,6 +120,12 @@ CAS_TO_FULL = {
     "460-00-4": "4-Bromofluorobenzene",
 }
 
+QUERY_TYPE_TO_DB = {
+    "ds-pfas": "DSPFAS",
+    "ds-int": "DSInt",
+    "ds-ext": "DSExt"
+}
+
 def normalize(text):
     if not text:
         return ''
@@ -318,13 +324,22 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         sql = f"INSERT INTO [Jackson].[DSPFAS] ({columns_sql}) VALUES" + ", ".join(rows) + ";"
 
         try:
+            target_db = QUERY_TYPE_TO_DB.get(query_type)
+            if not target_db:
+                return func.HttpResponse(
+                    json.dumps({"error": f"No database configured for query_type '{query_type}'"}),
+                    status_code=400,
+                    mimetype="application/json"
+                )
+
+            # Read credentials from environment
             username = os.environ["SQL_USER"]
             password = os.environ["SQL_PASSWORD"]
             server = os.environ["SQL_SERVER"]
-            db = os.environ["SQL_DB"]
 
+            # Build the dynamic connection string
             connection_string = (
-                f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
+                f"mssql+pyodbc://{username}:{password}@{server}:1433/{target_db}"
                 "?driver=ODBC+Driver+17+for+SQL+Server"
                 "&encrypt=yes"
                 "&trustServerCertificate=no"
