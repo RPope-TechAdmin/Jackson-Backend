@@ -74,7 +74,7 @@ CAS_TO_FULL = {
     "7440-02-0": "Total Nickel",
     "7439-92-1": "Total Lead",
     "7440-66-6": "Total Zinc",
-    "7469-96-5": "Total Manganese",
+    "7439-96-5": "Total Manganese",
     "7782-49-2": "Total Selenium",
     "7440-22-4": "Total Silver",
     "7440-62-2": "Total Vanadium",
@@ -121,7 +121,17 @@ def normalize(text):
     return text.lower().strip()
 
 PARTIAL_MATCH_MAP = {
-      normalize("Sum of TOP C4 - C14 Carboxylates and C4"): "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates"
+      normalize("Sum of TOP C4 - C14 Carboxylates and C4"): "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates",
+      normalize("^ C6 - C10 Fraction minus BTEX C6_C10-BTEX(F1)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize("C10 - C14 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize("C15 - C28 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize("C29 - C36 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize("^ C10 - C36 Fraction (sum)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize(">C10 - C16 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize(">C16 - C34 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize(">C34 - C40 Fraction"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize("^ >C10 - C40 Fraction (sum)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize(">C10 - C16 Fraction minus Naphthalene (F2)"): "TRH NEPMC6 - C10 Fraction minus BTEX"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -230,28 +240,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                     logging.info(f"Partial match override: '{analyte}' → '{match}'")
                                 else:
                                     match = None
-
-                            # Then fuzzy fallback if analyte is long enough
-                            if not match and len(normalized_analyte) > 10:
-                                match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
-                            logging.info({
-                                "analyte_raw": analyte,
-                                "matched": match,
-                                "sample_location": sample_location,
-                                "sampling_datetime": sample_datetime,
-                                "column_index": col_index + 3
-                            })
-
-                            # Match abbreviation if fuzzy fails
-                            if not match:
-                                abbrev_found = re.findall(r'\b[a-z]{2,6}\b', normalized_analyte)
-                                for abbrev in abbrev_found:
-                                    if abbrev in ABBREV_TO_FULL:
-                                        full_name = ABBREV_TO_FULL[abbrev]
-                                        if full_name in analyte_fields:
-                                            match = full_name
-                                            logging.info(f"Abbreviation matched: {abbrev} → {full_name}")
-                                            break
                             
                             # Match on CAS number if abbreviation fails
                             if not match:
@@ -263,6 +251,28 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                             match = full_name
                                             logging.info(f"CAS matched: {cas} → {full_name}")
                                             break
+                            
+                            # Match abbreviation if fuzzy fails
+                            if not match:
+                                abbrev_found = re.findall(r'\b[a-z]{2,6}\b', normalized_analyte)
+                                for abbrev in abbrev_found:
+                                    if abbrev in ABBREV_TO_FULL:
+                                        full_name = ABBREV_TO_FULL[abbrev]
+                                        if full_name in analyte_fields:
+                                            match = full_name
+                                            logging.info(f"Abbreviation matched: {abbrev} → {full_name}")
+                                            break
+
+                            # Then fuzzy fallback if analyte is long enough
+                            if not match and len(normalized_analyte) > 10:
+                                match = next((f for f in analyte_fields if normalize(f) in normalized_analyte or normalized_analyte in normalize(f)), None)
+                            logging.info({
+                                "analyte_raw": analyte,
+                                "matched": match,
+                                "sample_location": sample_location,
+                                "sampling_datetime": sample_datetime,
+                                "column_index": col_index + 3
+                            })
 
                             if not match:
                                 logging.warning(f"Unmatched analyte: '{analyte}' (normalized: '{normalized_analyte}')")
