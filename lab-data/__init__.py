@@ -29,7 +29,7 @@ FIELD_MAP = {
         "File Name",
         "Sample Location",
         "Sampling Date/Time",
-        "Electrical Conductivity @ 25°C","Nitrite + Nitrate as N"
+        "Electrical Conductivity @ 25°C","Nitrite + Nitrate as N",
         "Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Phosphorus as P"
     ],
     "ds-ext": [
