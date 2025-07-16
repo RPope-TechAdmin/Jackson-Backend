@@ -6,11 +6,11 @@ import os
 import json
 import re
 import logging
-import pyodbc
+import pymssql
 from sqlalchemy import create_engine, text
 
 cors_headers = {
-    "Access-Control-Allow-Origin": "https://delightful-tree-0888c340f.1.azurestaticapps.net",
+    "Access-Control-Allow-Origin": "https://delightful-tree-0888c340f.1.azurestaticapps.net", 
     "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
     "Access-Control-Allow-Headers": "Content-Type, Accept",
     "Access-Control-Max-Age": "86400"
@@ -329,22 +329,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
 
         try:
+
             username = os.environ["SQL_USER"]
             password = os.environ["SQL_PASSWORD"]
             server = os.environ["SQL_SERVER"]
             db = os.environ["SQL_DB_LAB"]
-            driver="ODBC Driver 18 for SQL Server"
 
-            connection_string = (
-                f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
-                f"?driver={driver}"
-                "&encrypt=yes"
-                "&trustServerCertificate=no;"
-            )
+            with pymssql.connect(server, username, password, db) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(sql)
+                conn.commit()
 
-            engine = create_engine(connection_string)
-            with engine.connect() as conn:
-                conn.execute(text(sql))
 
             logging.info("✅ Data inserted into SQL Server.")
             return func.HttpResponse(

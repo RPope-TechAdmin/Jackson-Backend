@@ -2,7 +2,7 @@ azure-functions
 azure-identity
 pdfplumber==0.5.28
 sqlalchemy
-pyodbc
+pymssql
 python-tds
 requests_toolbelt
 requests
