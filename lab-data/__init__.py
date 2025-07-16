@@ -9,8 +9,6 @@ import logging
 import pyodbc
 from sqlalchemy import create_engine, text
 
-print("Available Drivers: ", pyodbc.drivers())
-
 cors_headers = {
     "Access-Control-Allow-Origin": "https://delightful-tree-0888c340f.1.azurestaticapps.net",
     "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
