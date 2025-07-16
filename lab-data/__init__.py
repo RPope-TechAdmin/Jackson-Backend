@@ -301,6 +301,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             if val:
                                 val = val.strip().replace("<", "")
+                                val = val.strip().replace("~", "")
                                 if val in ["", "-", "----"]:
                                     row_dict[match] = "NULL"
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
