@@ -7,6 +7,7 @@ import json
 import re
 import logging
 import pymssql
+import time
 from sqlalchemy import create_engine, text
 
 cors_headers = {
@@ -335,10 +336,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             server = os.environ["SQL_SERVER"]
             db = os.environ["SQL_DB_LAB"]
 
-            with pymssql.connect(server, username, password, db) as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(sql)
-                conn.commit()
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    with pymssql.connect(server, username, password, db) as conn:
+                        with conn.cursor() as cursor:
+                            cursor.execute(sql)
+                        conn.commit()
+                    break  # success
+                except pymssql.OperationalError as e:
+                    if attempt < max_retries - 1:
+                        logging.warning(f"Retrying DB connection in 5 seconds... Attempt {attempt + 1}")
+                        time.sleep(5)
+                    else:
+                        raise
+
 
 
             logging.info("✅ Data inserted into SQL Server.")
