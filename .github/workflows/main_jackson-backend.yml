@@ -1,4 +1,8 @@
-name: Deploy Python Function App - Jackson-Backend
+# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+# More info on Python, GitHub Actions, and Azure Functions: https://aka.ms/python-webapps-actions
+
+name: Build and deploy Python project to Azure Function App - Jackson-Backend
 
 on:
   push:
@@ -7,36 +11,70 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'Jackson-Backend'
-  PYTHON_VERSION: '3.10'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  PYTHON_VERSION: '3.10' # set this to the python version to use (supports 3.6, 3.7, 3.8)
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
 
     steps:
       - name: 🧾 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 🔐 Azure Login
+      - name: 🧼 Clean old packages
+        run: rm -rf .python_packages
+
+      - name: 📦 Install dependencies to .python_packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+
+      - name: 📁 Zip entire app for deployment (including hidden dirs like .python_packages)
+        run: zip -r release.zip . -x "venv/*"
+
+      - name: ☁️ Upload artifact for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: release.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip     
+        
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_78CEF60B352F4D798CD748A8CF73B20C }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B93E55247C934391BE2662E112B6A393 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_61DB72DFEF1446C299160B767E5B028C }}
 
-      - name: 📦 Deploy with remote build
+      - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
+        id: deploy-to-function
         with:
-          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          app-name: 'Jackson-Backend'
           slot-name: 'jackson'
-          package: '.'
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           scm-do-build-during-deployment: true
+          
