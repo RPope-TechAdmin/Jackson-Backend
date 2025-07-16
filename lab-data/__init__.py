@@ -155,7 +155,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.info("Parsing multipart form data...")
         content_type = req.headers.get("Content-Type", "")
         if "multipart/form-data" not in content_type:
-            return func.HttpResponse(json.dumps({"error": "Expected multipart/form-data"}), status_code=400)
+            return func.HttpResponse(json.dumps({"error": "Expected multipart/form-data"}), status_code=400, mimetype="application/json")
 
         multipart_data = decoder.MultipartDecoder(req.get_body(), content_type)
 
@@ -172,9 +172,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     query_type = part.text.strip().lower()
 
         if not file_content:
-            return func.HttpResponse(json.dumps({"error": "No PDF file uploaded"}), status_code=400)
+            return func.HttpResponse(json.dumps({"error": "No PDF file uploaded"}), status_code=400, mimetype="application/json")
         if not query_type or query_type not in FIELD_MAP:
-            return func.HttpResponse(json.dumps({"error": "Invalid or missing query_type"}), status_code=400)
+            return func.HttpResponse(json.dumps({"error": "Invalid or missing query_type"}), status_code=400, mimetype="application/json")
 
         target_fields = FIELD_MAP[query_type]
         analyte_fields = target_fields[2:]  # skip Sample Location and Date/Time
@@ -312,7 +312,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             i = j
 
         if not combined_rows:
-            return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400)
+            return func.HttpResponse(json.dumps({"error": "No valid data found in PDF"}), status_code=400, mimetype="application/json")
 
         rows = []
         for row_dict in combined_rows.values():
@@ -322,7 +322,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         
         table_name = QUERY_TYPE_TO_TABLE.get(query_type)
         if not table_name:
-            return func.HttpResponse(json.dumps({"error": f"Invalid query_type: {query_type}"}), status_code=400)
+            return func.HttpResponse(json.dumps({"error": f"Invalid query_type: {query_type}"}), status_code=400, mimetype="application/json")
 
         columns_sql = ", ".join([f"[{f}]" for f in target_fields])
         sql = f"INSERT INTO {table_name} ({columns_sql}) VALUES" + ", ".join(rows) + ";"
@@ -364,5 +364,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("Unhandled exception")
         return func.HttpResponse(
             json.dumps({"error": "Internal server error", "details": str(e)}),
-            status_code=500
+            status_code=500,
+            mimetype="application/json"
         )
