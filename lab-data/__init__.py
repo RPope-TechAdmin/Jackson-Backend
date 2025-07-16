@@ -300,11 +300,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             val = val_row[col_index + 3] if col_index + 3 < len(val_row) else None
 
                             if val:
-                                val = val.strip()
+                                val = val.strip().replace("<", "")
                                 if val in ["", "-", "----"]:
                                     row_dict[match] = "NULL"
-                                elif re.match(r'^-?\d+(\.\d+)?$', val.replace("<", "")):
-                                    row_dict[match] = val.replace("<", "")
+                                elif re.match(r'^-?\d+(\.\d+)?$', val):
+                                    # It's a numeric value
+                                    row_dict[match] = val
                                 else:
                                     row_dict[match] = f"'{val.replace('<', '')}'"
                             else:
