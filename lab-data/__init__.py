@@ -329,6 +329,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         columns_sql = ", ".join([f"[{f}]" for f in target_fields])
         sql = f"INSERT INTO {table_name} ({columns_sql}) VALUES" + ", ".join(rows) + ";"
 
+        print(sql)
 
         try:
 
