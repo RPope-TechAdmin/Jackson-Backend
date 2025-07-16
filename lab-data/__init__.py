@@ -16,6 +16,7 @@ cors_headers = {
     "Access-Control-Max-Age": "86400"
 }
 
+logging.info("📦 Deployed site packages: %s", os.listdir('/home/site/wwwroot/.python_packages/lib/site-packages'))
 
 FIELD_MAP = {
     "ds-pfas": [
