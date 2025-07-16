@@ -338,9 +338,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
             connection_string = (
                 f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
-                "?driver=ODBC+Driver+17+for+SQL+Server"
+                "?driver=ODBC+Driver+18+for+SQL+Server"
                 "&encrypt=yes"
                 "&trustServerCertificate=no"
+                "&Connection Timeout=30;"
             )
 
             engine = create_engine(connection_string)
