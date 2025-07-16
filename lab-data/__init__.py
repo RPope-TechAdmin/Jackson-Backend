@@ -247,17 +247,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 i = j
                                 continue
 
-                            # Strict match first
-                            match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
-
-                            # Check for known partial match
-                            if not match:
-                                if normalized_analyte in PARTIAL_MATCH_MAP:
-                                    match = PARTIAL_MATCH_MAP[normalized_analyte]
-                                    logging.info(f"Partial match override: '{analyte}' → '{match}'")
-                                else:
-                                    match = None
-                            
                             # Match on CAS number if abbreviation fails
                             if not match:
                                 cas_hits = re.findall(r'\b\d{2,7}-\d{2}-\d\b', analyte)
@@ -268,6 +257,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                             match = full_name
                                             logging.info(f"CAS matched: {cas} → {full_name}")
                                             break
+                            
+                            # Strict match
+                            match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
+
+                            # Check for known partial match
+                            if not match:
+                                if normalized_analyte in PARTIAL_MATCH_MAP:
+                                    match = PARTIAL_MATCH_MAP[normalized_analyte]
+                                    logging.info(f"Partial match override: '{analyte}' → '{match}'")
+                                else:
+                                    match = None
                             
                             # Match abbreviation if fuzzy fails
                             if not match:
