@@ -300,15 +300,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             val = val_row[col_index + 3] if col_index + 3 < len(val_row) else None
 
                             if val:
-                                val = val.strip().replace("<", "")
-                                val = val.strip().replace("~", "")
+                                val = val.strip().replace("<", "").replace("~", "")
                                 if val in ["", "-", "----"]:
                                     row_dict[match] = "NULL"
                                 elif re.match(r'^-?\d+(\.\d+)?$', val):
-                                    # It's a numeric value
-                                    row_dict[match] = val
+                                    row_dict[match] = val  # ✅ valid numeric
                                 else:
-                                    row_dict[match] = f"'{val.replace('<', '')}'"
+                                    row_dict[match] = "NULL"  # ❌ invalid for numeric column
                             else:
                                 row_dict[match] = "NULL"
 
@@ -319,8 +317,26 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         rows = []
         for row_dict in combined_rows.values():
-            row_values = [row_dict.get(field, "NULL") for field in target_fields]
+            row_values = []
+            for i, field in enumerate(target_fields):
+                val = row_dict.get(field, "NULL")
+
+                if i < 3:
+                    # Quote first 3 fields
+                    if val == "NULL":
+                        row_values.append("NULL")
+                    else:
+                        val = val.strip("'").replace("'", "''")
+                        row_values.append(f"'{val}'")
+                else:
+                    # Only allow numeric values or NULL
+                    if re.match(r'^-?\d+(\.\d+)?$', val):
+                        row_values.append(val)
+                    else:
+                        row_values.append("NULL")
+
             rows.append(f"           ({', '.join(row_values)})")
+
 
         
         table_name = QUERY_TYPE_TO_TABLE.get(query_type)
