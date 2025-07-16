@@ -333,10 +333,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             password = os.environ["SQL_PASSWORD"]
             server = os.environ["SQL_SERVER"]
             db = os.environ["SQL_DB_LAB"]
+            driver="ODBC Driver 17 for SQL Server"
 
             connection_string = (
                 f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
-                "?driver=ODBC+Driver+17+for+SQL+Server'"
+                f"?driver={driver}"
                 "&encrypt=yes"
                 "&trustServerCertificate=no;"
             )
