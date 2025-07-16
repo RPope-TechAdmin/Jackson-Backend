@@ -9,14 +9,14 @@ import logging
 import pyodbc
 from sqlalchemy import create_engine, text
 
+print("Available Drivers: ", pyodbc.drivers())
+
 cors_headers = {
     "Access-Control-Allow-Origin": "https://delightful-tree-0888c340f.1.azurestaticapps.net",
     "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
     "Access-Control-Allow-Headers": "Content-Type, Accept",
     "Access-Control-Max-Age": "86400"
 }
-
-logging.info("📦 Deployed site packages: %s", os.listdir('/home/site/wwwroot/.python_packages/lib/site-packages'))
 
 FIELD_MAP = {
     "ds-pfas": [
@@ -338,10 +338,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
             connection_string = (
                 f"mssql+pyodbc://{username}:{password}@{server}:1433/{db}"
-                "?driver=ODBC+Driver+18+for+SQL+Server"
+                "?driver=ODBC+Driver+17+for+SQL+Server'"
                 "&encrypt=yes"
-                "&trustServerCertificate=no"
-                "&Connection Timeout=30;"
+                "&trustServerCertificate=no;"
             )
 
             engine = create_engine(connection_string)
