@@ -35,7 +35,7 @@ jobs:
       - name: 📦 Install dependencies to .python_packages
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+          pip install -r requirements.txt
 
       - name: 📁 Zip entire app for deployment (including hidden dirs like .python_packages)
         run: zip -r release.zip . -x "venv/*"
