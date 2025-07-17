@@ -261,10 +261,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             if not analyte or normalized_analyte in ["", "result", "results", "cas", "parameter"] or any(term in normalized_analyte for term in NON_ANALYTE_LABELS):
                                 logging.info(f"Skipping non-analyte label: '{analyte}' (normalized: '{normalized_analyte}')")
                                 i = j
+                                continue
                             else:
                                 logging.info(f"Analyte label identified: {analyte}, Normalised: {normalized_analyte}")
-                                continue
-
+                                
 
                             # Strict match
                             match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
