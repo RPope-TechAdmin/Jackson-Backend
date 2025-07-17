@@ -261,6 +261,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             if not analyte or normalized_analyte in ["", "result", "results", "cas", "parameter"] or any(term in normalized_analyte for term in NON_ANALYTE_LABELS):
                                 logging.info(f"Skipping non-analyte label: '{analyte}' (normalized: '{normalized_analyte}')")
                                 i = j
+                            else:
+                                logging.info(f"Analyte label identified: {analyte}, Normalised: {normalized_analyte}")
                                 continue
 
 
@@ -269,6 +271,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             # Match on CAS number if abbreviation fails
                             if not match:
+                                logging.info(f"No strict match for {analyte}")
                                 cas_hits = re.findall(r'\b\d{2,7}-\d{2}-\d\b', analyte)
                                 for cas in cas_hits:
                                     if cas in CAS_TO_FULL:
@@ -280,6 +283,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             # Check for known partial match
                             if not match:
+                                logging.info(f"No CAS match for {analyte} with CAS of {cas}")
                                 if normalized_analyte in PARTIAL_MATCH_MAP:
                                     match = PARTIAL_MATCH_MAP[normalized_analyte]
                                     logging.info(f"Partial match override: '{analyte}' → '{match}'")
@@ -288,6 +292,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             
                             # Match abbreviation if fuzzy fails
                             if not match:
+                                logging.info(f"No partial match identified for {analyte}")
                                 abbrev_found = re.findall(r'\b[a-z]{2,6}\b', normalized_analyte)
                                 for abbrev in abbrev_found:
                                     if abbrev in ABBREV_TO_FULL:
