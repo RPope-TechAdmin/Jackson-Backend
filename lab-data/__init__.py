@@ -121,6 +121,20 @@ CAS_TO_FULL = {
     "460-00-4": "4-Bromofluorobenzene",
 }
 
+NON_ANALYTE_LABELS = [
+    "results", "result", "cas number", "parameter", "compound", "unit",
+    "sampling date", "sample id", "sub-matrix", "matrix",
+    "ep075", "ep080", "eg020t", "phenolic compounds", "btexn",
+    "surrogate", "notes", "qc", "page", "work order", "client", "project",
+    "EG020T: Total Metals by ICP-MS","EG035T: Total Recoverable Mercury by FIMS","EP005: Total Organic Carbon (TOC)",
+    "EP071 SG: Total Petroleum Hydrocarbons - Silica gel cleanup","EP071 SG: Total Recoverable Hydrocarbons - NEPM 2013 Fractions - Silica gel cleanup",
+    "EP071 SG: Total Recoverable Hydrocarbons - NEPM 2013 Fractions - Silica gel cleanup - Continued",
+    "EP075(SIM)A: Phenolic Compounds","EP080/071: Total Petroleum Hydrocarbons","EP080/071: Total Recoverable Hydrocarbons - NEPM 2013 Fractions",
+    "EP080: BTEXN","MW006: Thermotolerant Coliforms & E.coli by MF","EP075(SIM)S: Phenolic Compound Surrogates",
+    "EP075(SIM)T: PAH Surrogates","EP080S: TPH(V)/BTEX Surrogates"
+]
+
+
 QUERY_TYPE_TO_TABLE = {
     "ds-pfas": "[Jackson].[DSPFAS]",
     "ds-int": "[Jackson].[DSInt]",
@@ -241,11 +255,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             analyte = ' '.join(analyte_lines).strip()
                             normalized_analyte = normalize(analyte)
 
-                            # Skip blank or non-analyte labels
-                            if not analyte or normalized_analyte in ["", "result", "results", "cas", "parameter"]:
-                                logging.info(f"Skipping non-analyte label: '{analyte}'")
+                            # Skip blank or known non-analyte labels
+                            if not analyte or normalized_analyte in ["", "result", "results", "cas", "parameter"] or any(term in normalized_analyte for term in NON_ANALYTE_LABELS):
+                                logging.info(f"Skipping non-analyte label: '{analyte}' (normalized: '{normalized_analyte}')")
                                 i = j
                                 continue
+
 
                             # Strict match
                             match = next((f for f in analyte_fields if normalize(f) == normalized_analyte), None)
