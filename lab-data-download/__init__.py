@@ -8,7 +8,7 @@ import azure.functions as func
 def get_connection():
     # Use ODBC Driver 18 (recommended for Azure SQL)
     conn_str = (
-        "DRIVER={ODBC Driver 18 for SQL Server};"
+        "DRIVER={ODBC Driver 17 for SQL Server};"
         "SERVER=purenvqld.database.windows.net;"
         "DATABASE=Laboratory;"
         "UID=reportabledatadownloader;"   # 👈 Must include @servername
