@@ -11,7 +11,7 @@ def get_connection():
         "DRIVER={ODBC Driver 17 for SQL Server};"
         "SERVER=purenvqld.database.windows.net;"
         "DATABASE=Laboratory;"
-        "UID=reportabledatadownloader;"   # 👈 Must include @servername
+        "UID=reportabledatadownloader@purenvqld;"   # 👈 Must include @servername
         "PWD=Rep0r7D47aD0wn;"
         "Encrypt=yes;"
         "TrustServerCertificate=no;"
