@@ -7,3 +7,5 @@ python-tds
 requests_toolbelt
 requests
 python-multipart
+flask
+openpyxl
