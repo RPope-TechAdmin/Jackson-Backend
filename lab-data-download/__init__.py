@@ -1,28 +1,26 @@
 import logging
-import os
-import pymssql
+import pyodbc
 import openpyxl
 from io import BytesIO
 from datetime import datetime
 import azure.functions as func
 
-cors_headers = {
-    "Access-Control-Allow-Origin": "https://delightful-tree-0888c340f.1.azurestaticapps.net", 
-    "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
-    "Access-Control-Allow-Headers": "Content-Type, Accept",
-    "Access-Control-Max-Age": "86400"
-}
-
 def get_connection():
-    return pymssql.connect(
-        server= os.environ["SQL_SERVER"],
-        user=os.environ["SQL_USERNAME_DOWNLOAD"],
-        password=os.environ["SQL_PASSWORD_DOWNLOAD"],
-        database= os.environ["SQL_DB_LAB"]
+    # Use ODBC Driver 18 (recommended for Azure SQL)
+    conn_str = (
+        "DRIVER={ODBC Driver 18 for SQL Server};"
+        "SERVER=purenvqld.database.windows.net;"
+        "DATABASE=Laboratory;"
+        "UID=reportabledatadownloader;"   # 👈 Must include @servername
+        "PWD=Rep0r7D47aD0wn;"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+        "Connection Timeout=30;"
     )
+    return pyodbc.connect(conn_str)
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Processing excel download request")
+    logging.info("Processing /download-excel request")
     try:
         data = req.get_json()
     except ValueError:
@@ -35,14 +33,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     if not selections:
         return func.HttpResponse("No analytes selected", status_code=400)
 
-    # ✅ Group analytes by table
+    # Group analytes by table
     grouped = {}
     for sel in selections:
         grouped.setdefault(sel["table"], []).append(sel["analyte"])
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Reportable Data"
+    ws.title = "Data"
 
     headers_written = False
 
@@ -51,17 +49,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         cursor = conn.cursor()
 
         for table, analytes in grouped.items():
-            placeholders = ",".join(["%s"] * len(analytes))
+            placeholders = ",".join(["?"] * len(analytes))
             query = f"""
                 SELECT *
                 FROM {table}
                 WHERE Analyte IN ({placeholders})
-                AND SampleDate BETWEEN %s AND %s
+                AND SampleDate BETWEEN ? AND ?
             """
             params = analytes + [start_date, end_date]
-            cursor.execute(query, tuple(params))
+            cursor.execute(query, params)
             rows = cursor.fetchall()
-            columns = [col[0] for col in cursor.description]
+            columns = [desc[0] for desc in cursor.description]
 
             if not headers_written:
                 ws.append(columns)
@@ -74,7 +72,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         wb.save(output)
         output.seek(0)
 
-        filename = f"Reportable Data Downloaded {datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        filename = f"data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
 
         return func.HttpResponse(
             body=output.getvalue(),
