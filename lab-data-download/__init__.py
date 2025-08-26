@@ -1,11 +1,10 @@
-from flask import Flask, request, send_file, jsonify
+import logging
+import os
 import pymssql
 import openpyxl
 from io import BytesIO
-import os
 from datetime import datetime
-
-app = Flask(__name__)
+import azure.functions as func
 
 cors_headers = {
     "Access-Control-Allow-Origin": "https://delightful-tree-0888c340f.1.azurestaticapps.net", 
@@ -13,85 +12,80 @@ cors_headers = {
     "Access-Control-Allow-Headers": "Content-Type, Accept",
     "Access-Control-Max-Age": "86400"
 }
-# DB configuration
-DB_CONFIG = {
-    "server": os.environ["SQL_SERVER"],
-    "database": os.environ["SQL_DB_LAB"],
-    "username": os.environ["SQL_USERNAME_DOWNLOAD"],
-    "password": os.environ["SQL_PASSWORD_DOWNLOAD"]
-}
 
 def get_connection():
     return pymssql.connect(
-        server=DB_CONFIG["server"],
-        user=DB_CONFIG["username"],
-        password=DB_CONFIG["password"],
-        database=DB_CONFIG["database"]
+        server= os.environ["SQL_SERVER"],
+        user=os.environ["SQL_USERNAME_DOWNLOAD"],
+        password=os.environ["SQL_PASSWORD_DOWNLOAD"],
+        database= os.environ["SQL_DB_LAB"]
     )
 
-@app.route("/download-excel", methods=["POST"])
-def download_excel():
-    data = request.get_json()
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Processing excel download request")
+    try:
+        data = req.get_json()
+    except ValueError:
+        return func.HttpResponse("Invalid JSON", status_code=400)
+
     selections = data.get("selections", [])
     start_date = data.get("startDate")
     end_date = data.get("endDate")
 
     if not selections:
-        return jsonify({"error": "No analytes selected"}), 400
-    if not start_date or not end_date:
-        return jsonify({"error": "Date range required"}), 400
+        return func.HttpResponse("No analytes selected", status_code=400)
+
+    # ✅ Group analytes by table
+    grouped = {}
+    for sel in selections:
+        grouped.setdefault(sel["table"], []).append(sel["analyte"])
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Reportable Data"
+
+    headers_written = False
 
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
-        # Build query dynamically with placeholders
-        placeholders = ",".join(["%s"] * len(selections))
-        query = f"""
-            SELECT *
-            FROM YourTable
-            WHERE Analyte IN ({placeholders})
-            AND SampleDate BETWEEN %s AND %s
-        """
+        for table, analytes in grouped.items():
+            placeholders = ",".join(["%s"] * len(analytes))
+            query = f"""
+                SELECT *
+                FROM {table}
+                WHERE Analyte IN ({placeholders})
+                AND SampleDate BETWEEN %s AND %s
+            """
+            params = analytes + [start_date, end_date]
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
 
-        params = selections + [start_date, end_date]
-        cursor.execute(query, tuple(params))
+            if not headers_written:
+                ws.append(columns)
+                headers_written = True
 
-        rows = cursor.fetchall()
-        columns = [col[0] for col in cursor.description]
+            for row in rows:
+                ws.append(list(row))
 
-        # Create Excel workbook
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Data"
-
-        # Write headers
-        ws.append(columns)
-
-        # Write rows
-        for row in rows:
-            ws.append(list(row))
-
-        # Save to memory
         output = BytesIO()
         wb.save(output)
         output.seek(0)
 
-        # Send file to browser
-        filename = f"data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name=filename,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"Reportable Data Downloaded {datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+        return func.HttpResponse(
+            body=output.getvalue(),
+            status_code=200,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
 
     except Exception as e:
-        print("Error:", e)
-        return jsonify({"error": str(e)}), 500
+        logging.error(str(e))
+        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
     finally:
         cursor.close()
         conn.close()
-
-if __name__ == "__main__":
-    app.run(port=3000, debug=True)
