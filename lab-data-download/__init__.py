@@ -53,7 +53,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             placeholders = ",".join(["?"] * len(analytes))
             query = f"""
                 SELECT *
-                FROM {table}
+                FROM [Jackson].[{table}]
                 WHERE Analyte IN ({placeholders})
                 AND SampleDate BETWEEN ? AND ?
             """
