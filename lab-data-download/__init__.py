@@ -140,29 +140,26 @@ def safe_sheet_name(name: str) -> str:
     return (name or "Sheet")[:31]
 
 # ========= MAIN FUNCTION =========
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Processing request")
+    logging.info("Processing /download-excel request")
     try:
         data = req.get_json()
     except ValueError:
         return func.HttpResponse("Invalid JSON body.", status_code=400)
 
-    # Validate dates
     start_date = data.get("startDate")
     end_date = data.get("endDate")
     if not start_date or not end_date:
         return func.HttpResponse("Both startDate and endDate are required.", status_code=400)
 
-    # Normalize selections
     grouped = normalize_payload(data)
     if not grouped:
         return func.HttpResponse("No analytes selected.", status_code=400)
 
     # Open workbook
     wb = openpyxl.Workbook()
-    # We'll create the first sheet lazily; remove the default if unused
-    default_ws = wb.active
-    default_used = False
+    wb.remove(wb.active)
 
     try:
         conn = connect_with_fallback(timeout_seconds=60)
@@ -170,57 +167,42 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         any_rows_written = False
 
-        # Iterate groups (HTML groups) → resolve table
         for group_key, analytes in grouped.items():
-            # Resolve to table name
-            table = GROUP_TO_TABLE.get(group_key)
-            if table is None:
-                # Maybe the key itself was a table name in payload
-                table = group_key
-
-            # Validate table against whitelist
+            table = GROUP_TO_TABLE.get(group_key, group_key)
             if table not in ALLOWED_COLUMNS:
                 logging.warning(f"Skipping unknown/unauthorized table: {table}")
-                # Continue to next group; do not error the whole request
                 continue
 
-            # Whitelist columns
             analyte_cols = whitelist_columns(table, analytes)
             if not analyte_cols:
                 logging.info(f"No valid analyte columns for {table}, requested: {analytes}")
                 continue
 
-            # Build and run query
             sql = build_select_sql(table, analyte_cols)
-            logging.info(f"Running query for {table}: columns={analyte_cols}")
+            logging.info(f"Running query for {table}: {sql}")
             cursor.execute(sql, (start_date, end_date))
             rows = cursor.fetchall()
             columns = [d[0] for d in cursor.description]
 
-            # Choose/create sheet
-            sheet_name = safe_sheet_name(group_key)  # use the HTML group id as sheet name
-            if not default_used:
-                ws = default_ws
-                ws.title = sheet_name
-                default_used = True
-            else:
-                ws = wb.createSheet(title=sheet_name)
+            logging.info(f"Grouped selections: {grouped}")
+            logging.info(f"SQL about to run: {sql}")
+            logging.info(f"Row count returned: {len(rows)}")
 
-            # Write headers & rows
+
+            ws = wb.create_sheet(title=safe_sheet_name(group_key))
             ws.append(columns)
-            for row in rows:
-                ws.append(list(row))
 
-            any_rows_written = any_rows_written or bool(rows)
+            if rows:
+                for row in rows:
+                    ws.append(list(row))
+                any_rows_written = True
+            else:
+                ws.append(["No data found for this selection."])
 
-        # If nothing was written, return a friendly message
-        if not any_rows_written:
-            return func.HttpResponse(
-                "No data returned for the selected analytes and date range.",
-                status_code=204  # No Content
-            )
+        if not wb.worksheets:  # safety: if nothing created
+            ws = wb.create_sheet(title="Results")
+            ws.append(["No data found at all."])
 
-        # Stream workbook
         output = BytesIO()
         wb.save(output)
         output.seek(0)
@@ -237,11 +219,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.error(f"Download error: {e}", exc_info=True)
         return func.HttpResponse(f"Error: {e}", status_code=500)
     finally:
-        try:
-            cursor.close()
-        except Exception:
-            pass
-        try:
-            conn.close()
-        except Exception:
-            pass
+        try: cursor.close()
+        except Exception: pass
+        try: conn.close()
+        except Exception: pass
