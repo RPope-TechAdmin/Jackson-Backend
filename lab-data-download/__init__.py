@@ -17,15 +17,15 @@ SQL_PASSWORD = "Rep0r7D47aD0wn"
 
 # Map HTML group ids → fully-qualified table names (include schema!)
 GROUP_TO_TABLE: Dict[str, str] = {
-    "external": "lab.DSExt",     # External Analytes
-    "pfastopa": "lab.DSPFAS",    # PFAS TOPA
-    "internal": "lab.DSInt",     # Internal Analytes
+    "external": "Jackson.DSExt",     # External Analytes
+    "pfastopa": "Jackson.DSPFAS",    # PFAS TOPA
+    "internal": "Jackson.DSInt",     # Internal Analytes
 }
 
 # Whitelist analyte columns per table to avoid SQL injection via column names.
 # ⚠️ 
 ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
-    "lab.DSExt": {
+    "Jackson.DSExt": {
         "Total Arsenic","Total Beryllium","Total Cadmium","Total Chromium",
         "Total Copper","Total Cobalt","Total Nickel","Total Lead","Total Zinc","Total Manganese","Total Selenium","Total Silver","Total Vanadium",
         "Total Boron","Total Mercury","Total Organic Carbon","TPH Silica C10 - C14 Fraction","TPH Silica C15 - C28 Fraction",
@@ -38,7 +38,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
         "Anthracene-d10","4-Terphenyl-d14","1,2-Dichloroethane-D4","Toluene-D8","4-Bromofluorobenzene", "Sulfate", "Sulfur"
         
     },
-    "lab.DSPFAS": {
+    "Jackson.DSPFAS": {
         "Perfluorobutane sulfonic acid", "Perfluoropentane sulfonic acid", "Perfluorohexane sulfonic acid",
         "Perfluoroheptane sulfonic acid", "Perfluorooctane sulfonic acid", "Perfluorodecane sulfonic acid",
         "Perfluorobutanoic acid", "Perfluoropentanoic acid", "Perfluorohexanoic acid", "Perfluoroheptanoic",
@@ -53,7 +53,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
         "Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates", "Sum of TOP C4 - C14 as Fluorine",
         "13C4-PFOS", "13C8-PFOA"
     },
-    "lab.DSInt": {
+    "Jackson.DSInt": {
         "Electrical Conductivity @ 25°C","Nitrite + Nitrate as N",
         "Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Phosphorus as P"}
 }
@@ -96,7 +96,7 @@ def normalize_payload(data) -> Dict[str, List[str]]:
     """
     Support two payload shapes:
       A) { "selections": { "external": ["arsenic", ...], "pfastopa": ["pfos"] }, "startDate": "...", "endDate": "..." }
-      B) { "selections": [ { "table": "lab.DSExt", "analyte":"arsenic" }, ... ], ... }
+      B) { "selections": [ { "table": "Jackson.DSExt", "analyte":"arsenic" }, ... ], ... }
     Returns a dict { group_key_or_table: [analytes...] } keyed by group-id (preferred) if possible.
     """
     sel = data.get("selections", [])
