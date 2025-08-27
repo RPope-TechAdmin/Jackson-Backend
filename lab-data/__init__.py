@@ -283,7 +283,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             # Check for known partial match
                             if not match:
-                                logging.info(f"No CAS match for {analyte} with CAS of {cas}")
+                                logging.info(f"No CAS match for {analyte}")
                                 if normalized_analyte in PARTIAL_MATCH_MAP:
                                     match = PARTIAL_MATCH_MAP[normalized_analyte]
                                     logging.info(f"Partial match override: '{analyte}' → '{match}'")
