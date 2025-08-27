@@ -13,7 +13,7 @@ import openpyxl
 SQL_SERVER = "purenvqld.database.windows.net"
 SQL_DATABASE = "Laboratory"
 SQL_USERNAME = "reportabledatadownloader"
-SQL_PASSWORD = "Rep0r7D47aD0wn!"
+SQL_PASSWORD = "Rep0r7D47aD0wn"
 
 # Map HTML group ids → fully-qualified table names (include schema!)
 GROUP_TO_TABLE: Dict[str, str] = {
