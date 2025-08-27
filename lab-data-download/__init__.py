@@ -130,7 +130,7 @@ def build_select_sql(table: str, analyte_cols: List[str]) -> str:
     # Build "SELECT SampleID, SampleDate, col1, col2 FROM schema.table WHERE SampleDate BETWEEN ? AND ?"
     selected_cols = ID_COLUMNS + analyte_cols
     cols_sql = ", ".join(f"[{c}]" for c in selected_cols)  # bracket-quote identifiers
-    return f"SELECT {cols_sql} FROM {table} WHERE [SampleDate] BETWEEN ? AND ?"
+    return f"SELECT {cols_sql} FROM {table} WHERE [Sampling Date/Time] BETWEEN ? AND ?"
 
 def safe_sheet_name(name: str) -> str:
     # Excel sheet name: max 31 chars, no []:*?/\
