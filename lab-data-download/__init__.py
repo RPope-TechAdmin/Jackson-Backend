@@ -17,9 +17,21 @@ SQL_PASSWORD = "Rep0r7D47aD0wn"
 
 # Map HTML group ids → fully-qualified table names (include schema!)
 GROUP_TO_TABLE: Dict[str, str] = {
-    "external": "Jackson.DSExt",     # External Analytes
-    "pfastopa": "Jackson.DSPFAS",    # PFAS TOPA
-    "internal": "Jackson.DSInt",     # Internal Analytes
+    "externalds": "Jackson.DSExt",     # External Analytes
+    "pfastopads": "Jackson.DSPFAS",    # PFAS TOPA
+    "internalds": "Jackson.DSInt",     # Internal Analytes
+    "ccp": "Jackson.CCPComp",
+    "ineff": "Jackson.IncomingEffluent",
+    "treff": "Jackson.TreatedEffluent",
+    "lfsw": "Jackson.LandfillSWDischarge",
+    "swall": "Jackson.SWAll",
+    "swpfas": "Jackson.SWPFAS",
+    "swint": "Jackson.SWInt",
+    "physin": "Jackson.PhysicalInSitu",
+    "pfasin": "Jackson.PFASInSitu",
+    "envin": "Jackson.EnvironmentalInSitu",
+    "tchanning": "Jackson.LittleTchanningTotalPFAS",
+    "moonapools": "Jackson.MoonaPoolsTotalPFAS"  
 }
 
 # Whitelist analyte columns per table to avoid SQL injection via column names.
@@ -183,13 +195,8 @@ def normalize_payload(data) -> Dict[str, List[str]]:
         return {}
 
 def whitelist_columns(table: str, requested: Iterable[str]) -> List[str]:
-    allowed = {c.lower(): c for c in ALLOWED_COLUMNS.get(table, [])}
-    result = []
-    for r in requested:
-        key = r.lower()
-        if key in allowed:
-            result.append(allowed[key])
-    return result
+    allowed = set(ALLOWED_COLUMNS.get(table, []))
+    return [c for c in requested if c in allowed]
 
 def build_select_sql(table: str, analyte_cols: List[str]) -> str:
     # Build "SELECT SampleID, SampleDate, col1, col2 FROM schema.table WHERE SampleDate BETWEEN ? AND ?"
