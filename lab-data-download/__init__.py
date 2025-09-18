@@ -114,7 +114,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
     },
     "Jackson.SWInt": {
         "Sulfate as SO4 - Turbidimetric","Chloride","Fluoride","Total Organic Carbon","Chemical Oxygen Demand"
-    },
+    }
 }
 
 
