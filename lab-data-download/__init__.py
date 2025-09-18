@@ -129,9 +129,26 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
     }
 }
 
+ID_COLUMNS = ["File","Sample Date", "Sample Location"]
 
 # Non-analyte identifier columns you always want back
-ID_COLUMNS = ["File Name", "Sample Location", "Sample Date"]
+TABLE_ID_COLUMNS: Dict[str, List[str]] = {
+    "Jackson.DSExt": ["File","Sample Date", "Sample Location"],
+    "Jackson.DSPFAS": ["File","Sample Date", "Sample Location"],
+    "Jackson.DSInt": ["File","Sample Date", "Sample Location"],  # doesn’t have Sample Location
+    "Jackson.CCPComp": ["File","Sample Date", "Sample Location"],
+    "Jackson.IncomingEffluent": ["File", "Sample Date"],
+    "Jackson.TreatedEffluent": ["File", "Sample Date"],
+    "Jackson.EnvironmentalInSitu": ["Sample Location", "Sample Date"],
+    "Jackson.LittleTchanningTotalPFAS": ["File","Sample Date", "Location"],
+    "Jackson.MoonaPoolsTotalPFAS": ["File","Sample Date", "Location"],
+    "Jackson.LandfillSWDischarge": ["DateR1", "DateR2"],
+    "Jackson.PhysicalInSitu": ["Sample Date"],
+    "Jackson.PFASInSitu": ["Sample Date","Test Type"],
+    "Jackson.SWAll": ["File","Sample Date", "Location"],
+    "Jackson.SWPFAS": ["File","Sample Date", "Location","Test Type"],
+    "Jackson.SWInt": ["File","Sample Date", "Location"]
+}
 
 # ========= DB CONNECT =========
 def connect_with_fallback(timeout_seconds: int = 60) -> pyodbc.Connection:
@@ -199,8 +216,10 @@ def whitelist_columns(table: str, requested: Iterable[str]) -> List[str]:
     return [c for c in requested if c in allowed]
 
 def build_select_sql(table: str, analyte_cols: List[str]) -> str:
-    # Build "SELECT SampleID, SampleDate, col1, col2 FROM schema.table WHERE SampleDate BETWEEN ? AND ?"
-    selected_cols = ID_COLUMNS + analyte_cols
+    # Fall back to global ID_COLUMNS if table not in map
+    id_cols = TABLE_ID_COLUMNS.get(table, ID_COLUMNS)
+
+    selected_cols = id_cols + analyte_cols
     cols_sql = ", ".join(f"[{c}]" for c in selected_cols)  # bracket-quote identifiers
     return f"SELECT {cols_sql} FROM {table} WHERE [Sample Date] BETWEEN ? AND ?"
     
