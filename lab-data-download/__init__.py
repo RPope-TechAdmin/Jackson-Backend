@@ -183,15 +183,20 @@ def normalize_payload(data) -> Dict[str, List[str]]:
         return {}
 
 def whitelist_columns(table: str, requested: Iterable[str]) -> List[str]:
-    allowed = set(ALLOWED_COLUMNS.get(table, []))
-    return [c for c in requested if c in allowed]
+    allowed = {c.lower(): c for c in ALLOWED_COLUMNS.get(table, [])}
+    result = []
+    for r in requested:
+        key = r.lower()
+        if key in allowed:
+            result.append(allowed[key])
+    return result
 
 def build_select_sql(table: str, analyte_cols: List[str]) -> str:
     # Build "SELECT SampleID, SampleDate, col1, col2 FROM schema.table WHERE SampleDate BETWEEN ? AND ?"
     selected_cols = ID_COLUMNS + analyte_cols
     cols_sql = ", ".join(f"[{c}]" for c in selected_cols)  # bracket-quote identifiers
     return f"SELECT {cols_sql} FROM {table} WHERE [Sampling Date/Time] BETWEEN ? AND ?"
-
+    
 def safe_sheet_name(name: str) -> str:
     # Excel sheet name: max 31 chars, no []:*?/\
     bad = '[]:*?/\\'
@@ -224,10 +229,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
 
     try:
-        logging.info(f"Table: {table}")
-        logging.info(f"Requested analytes: {analytes}")
-        logging.info(f"After whitelist: {analyte_cols}")
-        logging.info(f"StartDate: {start_date}, EndDate: {end_date}")
+        
 
         conn = connect_with_fallback(timeout_seconds=60)
         cursor = conn.cursor()
