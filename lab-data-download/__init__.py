@@ -221,13 +221,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
 
-    logging.info(f"Table: {table}")
-    logging.info(f"Requested analytes: {analytes}")
-    logging.info(f"After whitelist: {analyte_cols}")
-    logging.info(f"StartDate: {start_date}, EndDate: {end_date}")
 
 
     try:
+        logging.info(f"Table: {table}")
+        logging.info(f"Requested analytes: {analytes}")
+        logging.info(f"After whitelist: {analyte_cols}")
+        logging.info(f"StartDate: {start_date}, EndDate: {end_date}")
+
         conn = connect_with_fallback(timeout_seconds=60)
         cursor = conn.cursor()
 
