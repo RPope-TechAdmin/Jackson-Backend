@@ -142,7 +142,7 @@ TABLE_ID_COLUMNS: Dict[str, List[str]] = {
     "Jackson.EnvironmentalInSitu": ["Sample Location", "Sample Date"],
     "Jackson.LittleTchanningTotalPFAS": ["File","Sample Date", "Location"],
     "Jackson.MoonaPoolsTotalPFAS": ["File","Sample Date", "Location"],
-    "Jackson.LandfillSWDischarge": ["DateR1", "DateR2"],
+    "Jackson.LandfillSWDischarge": ["Sample Date", "DateR2"],
     "Jackson.PhysicalInSitu": ["Sample Date"],
     "Jackson.PFASInSitu": ["Sample Date","Test Type"],
     "Jackson.SWAll": ["File","Sample Date", "Location"],
