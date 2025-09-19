@@ -85,7 +85,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
     },
     "Jackson.EnvironmentalInSitu": {"pH","EC","TDS","DO"},
     "Jackson.LittleTchanningTotalPFAS": {"Perfluoropropane sulfonic acid (PFPrS)","Perfluorobutane sulfonic acid (PFBS)", "Perfluoropentane sulfonic acid (PFPeS)", "Perfluorohexane sulfonic acid (PFHxS)",
-        "Perfluoroheptane sulfonic acid (PFHpS)","Perflurooctane sulfonic acid (PFOS)", "Perfluorononane sulfonic acid (PFNS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)", 
+        "Perfluoroheptane sulfonic acid (PFHpS)","Perfluorooctane sulfonic acid (PFOS)", "Perfluorononane sulfonic acid (PFNS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)", 
         "Perfluoropentanoic acid (PFPeA)","Perfluorohexanoic acid (PFHxA)","Perfluoroheptanoic acid (PFHpA)", "Perfluorooctanoic acid (PFOA)", "Perfluorononanoic acid (PFNA)", 
         "Perfluorodecanoic acid (PFDA)","Perfluoroundecanoic acid (PFOA)","Perfluorododecanoic acid (PFDoDA)","Perfluorotridecanoic acid (PFTrDA)","Perfluorotetradecanoic acid (PFTeDA)",
         "perfluorohexadecanoic Acid (PFHxDA)","Perfluorooctane sulfonamide (FOSA)", "N-Methyl perfluorooctane sulfonamide (MeFOSA)","N-Ethyl perfluorooctane sulfonamide (EtFOSA)", "N-Methyl perfluorooctane sulfonamidoethanol (MeFOSE)",
@@ -93,7 +93,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
         "6:2 Fluorotelemer sulfonic acid (6:2 FTS)", "8:2 Fluorotelemer sulfonic acid (8:2 FTS)","10:2 Fluorotelemer sulfonic acid (10:2 FTS)","Sum of PFAS", "Sum of PFHxS & PFOS", "Sum of PFAS (WA DER List)", "13C4-PFOS", "13C8-PFOA", 
     },
     "Jackson.MoonaPoolsTotalPFAS": {
-        "Perfluoroheptane sulfonic acid (PFHpS)","Perflurooctane sulfonic acid (PFOS)", "Perfluorononane sulfonic acid (PFNS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)", 
+        "Perfluoroheptane sulfonic acid (PFHpS)","Perfluorooctane sulfonic acid (PFOS)", "Perfluorononane sulfonic acid (PFNS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)", 
         "Perfluoropentanoic acid (PFPeA)","Perfluorohexanoic acid (PFHxA)","Perfluoroheptanoic acid (PFHpA)", "Perfluorooctanoic acid (PFOA)", "Perfluorononanoic acid (PFNA)", 
         "Perfluorodecanoic acid (PFDA)","Perfluoroundecanoic acid (PFOA)","Perfluorododecanoic acid (PFDoDA)","Perfluorotridecanoic acid (PFTrDA)","Perfluorotetradecanoic acid (PFTeDA)",
         "perfluorohexadecanoic Acid (PFHxDA)","Perfluorooctane sulfonamide (FOSA)", "N-Methyl perfluorooctane sulfonamide (MeFOSA)","N-Ethyl perfluorooctane sulfonamide (EtFOSA)", "N-Methyl perfluorooctane sulfonamidoethanol (MeFOSE)",
