@@ -23,7 +23,7 @@ GROUP_TO_TABLE: Dict[str, str] = {
     "ccp": "Jackson.CCPComp",
     "ineff": "Jackson.IncomingEffluent",
     "treff": "Jackson.TreatedEffluent",
-    "lfsw": "Jackson.LandfillSWDischarge",
+    "lsfw": "Jackson.LandfillSWDischarge",
     "swall": "Jackson.SWAll",
     "swpfas": "Jackson.SWPFAS",
     "swint": "Jackson.SWInt",
