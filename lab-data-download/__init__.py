@@ -90,7 +90,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
         "Perfluorodecanoic acid (PFDA)","Perfluoroundecanoic acid (PFUnDA)","Perfluorododecanoic acid (PFDoDA)","Perfluorotridecanoic acid (PFTrDA)","Perfluorotetradecanoic acid (PFTeDA)",
         "perfluorohexadecanoic Acid (PFHxDA)","Perfluorooctane sulfonamide (FOSA)", "N-Methyl perfluorooctane sulfonamide (MeFOSA)","N-Ethyl perfluorooctane sulfonamide (EtFOSA)", "N-Methyl perfluorooctane sulfonamidoethanol (MeFOSE)",
         "N-Ethyl perfluorooctane sulfonamidoethanol (EtFOSE)", "N-Methyl perfluorooctane sulfonamidoacetic acid (MeFOSAA)","N-Ethyl perfluorooctane sulfonamidoacetic acid (EtFOSAA)","4:2 Fluorotelomer sulfonic acid (4:2 FTS)",
-        "6:2 Fluorotelomer sulfonic acid (6:2 FTS)", "8:2 Fluorotelomer sulfonic acid (8:2 FTS)","10:2 Fluorotelomer sulfonic acid (10:2 FTS)","Sum of PFAS", "Sum of PFHxS & PFOS", "Sum of PFAS (WA DER List)", "13C4-PFOS", "13C8-PFOA", 
+        "6:2 Fluorotelomer sulfonic acid (6:2 FTS)", "8:2 Fluorotelomer sulfonic acid (8:2 FTS)","10:2 Fluorotelomer sulfonic acid (10:2 FTS)","Sum of PFAS", "Sum of PFHxS and PFOS", "Sum of PFAS (WA DER List)", "13C4-PFOS", "13C8-PFOA", 
     },
     "Jackson.MoonaPoolsTotalPFAS": {
         "Perfluoroheptane sulfonic acid (PFHpS)","Perfluorooctane sulfonic acid (PFOS)", "Perfluorononane sulfonic acid (PFNS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)", 
