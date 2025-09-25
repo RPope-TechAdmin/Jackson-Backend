@@ -172,7 +172,9 @@ PARTIAL_MATCH_MAP = {
       normalize(">C34 - C40 Fraction"): "TRH C34 - C40 Fraction",
       normalize("^ >C10 - C40 Fraction (sum)"): "TRH C10 - C40 Fraction (sum)",
       normalize(">C10 - C16 Fraction minus Naphthalene (F2)"): "TRH C10 - C16 Fraction minus Naphthalene",
-      normalize("^ C6 - C10 Fraction minus BTEX C6_C10-BTEX (F1)"): "TRH NEPMC6 - C10 Fraction minus BTEX"
+      normalize("^ C6 - C10 Fraction minus BTEX C6_C10-BTEX (F1)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
+      normalize ("Total Dissolved Solids @180°C"): "TDS",
+      normalize("Escherichia coli"): "E. coli"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
