@@ -57,6 +57,12 @@ FIELD_MAP = {
         "TRH NEPMC6 - C10 Fraction minus BTEX","Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes",
         "Sum of BTEX","Naphthalene","Escherichia coli","Phenol-d6","2-Chlorophenol-D4","2,4,6-Tribromophenol","2-Fluorobiphenyl",
         "Anthracene-d10","4-Terphenyl-d14","1,2-Dichloroethane-D4","Toluene-D8","4-Bromofluorobenzene", "Sulfate", "Sulfur"
+    ],
+    "ineff": [
+        "File", "Sample Date", "pH", "TDS", "Nitrate", "Kjeldahl", "TotalN", "TotalP", "TOC", "BOD", "E. coli"
+    ],
+    "treff": [
+        "File", "Sample Date", "pH", "TDS", "Nitrate", "Kjeldahl", "TotalN", "TotalP", "TOC", "BOD", "E. coli"
     ]
 }
 
@@ -140,7 +146,9 @@ NON_ANALYTE_LABELS = [
 QUERY_TYPE_TO_TABLE = {
     "ds-pfas": "[Jackson].[DSPFAS]",
     "ds-int": "[Jackson].[DSInt]",
-    "ds-ext": "[Jackson].[DSExt]"
+    "ds-ext": "[Jackson].[DSExt]",
+    "ineff": "[Jackson].[IncomingEffluent]",
+    "treff": "[Jackson].[TreatedEffluent]"
 }
 
 def normalize(text):
