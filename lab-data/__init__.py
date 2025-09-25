@@ -59,10 +59,10 @@ FIELD_MAP = {
         "Anthracene-d10","4-Terphenyl-d14","1,2-Dichloroethane-D4","Toluene-D8","4-Bromofluorobenzene", "Sulfate", "Sulfur"
     ],
     "ineff": [
-        "File", "Sample Date", "pH", "TDS", "Nitrate", "Kjeldahl", "TotalN", "TotalP", "TOC", "BOD", "E. coli"
+        "File", "Sample Date", "pH", "TDS", "Nitrate", "Kjeldahl", "Total Nitrogen", "Total Phosphorus", "Total Organic Carbon", "Biochemical Oxygen Demand", "E. coli"
     ],
     "treff": [
-        "File", "Sample Date", "pH", "TDS", "Nitrate", "Kjeldahl", "TotalN", "TotalP", "TOC", "BOD", "E. coli"
+        "File", "Sample Date", "pH", "TDS", "Nitrate", "Kjeldahl", "Total Nitrogen", "Total Phosphorus", "Total Organic Carbon", "Biochemical Oxygen Demand", "E. coli"
     ]
 }
 
