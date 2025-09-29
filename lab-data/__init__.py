@@ -301,12 +301,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                             # Check for known partial match
                             if not match:
-                                logging.info(f"No CAS match for {analyte}")
-                                if normalized_analyte in PARTIAL_MATCH_MAP:
-                                    match = PARTIAL_MATCH_MAP[normalized_analyte]
+                                mapped = PARTIAL_MATCH_MAP.get(normalized_analyte)
+                                if mapped and mapped in analyte_fields:
+                                    match = mapped
                                     logging.info(f"Partial match override: '{analyte}' → '{match}'")
-                                else:
-                                    match = None
                             
                             # Match abbreviation if fuzzy fails
                             if not match:
