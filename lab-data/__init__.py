@@ -238,19 +238,20 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             continue
 
                         date_val = sample_datetimes[col_index] if col_index < len(sample_datetimes) else "NULL"
+                       # When constructing combined_rows
                         sample_location = str(sample_location).strip() if sample_location else None
-                        sample_datetime = str(date_val).strip() if date_val and date_val != "NULL" else None
+                        date_val = table[1][col_index + 3] if col_index + 3 < len(table[1]) else None
+                        sample_datetime = str(date_val).strip() if date_val and str(date_val).strip().lower() not in ("", "null") else None
+                        key=(sample_location, sample_datetime)
+                        combined_rows[key] = {
+                            "File Name": str(file_name).strip() if file_name else None,
+                            "Sample Location": sample_location,
+                            "Sampling Date/Time": sample_datetime
+                        }
 
-                        key = (sample_location, sample_datetime)
-                        if key not in combined_rows:
-                            combined_rows[key] = {
-                                "File Name": file_name or None,
-                                "Sample Location": sample_location,
-                                "Sampling Date/Time": sample_datetime
-                            }
-                            logging.info(f"File: {file_name}")
-                            logging.info(f"Location: {sample_location}")
-                            logging.info(f"Sample Date: {sample_datetime}")
+                        logging.info(f"File: {file_name}")
+                        logging.info(f"Location: {sample_location}")
+                        logging.info(f"Sample Date: {sample_datetime}")
 
                         row_dict = combined_rows[key]
 
