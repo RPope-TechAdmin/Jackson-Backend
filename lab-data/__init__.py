@@ -139,7 +139,9 @@ NON_ANALYTE_LABELS = [
     "EP071 SG: Total Recoverable Hydrocarbons - NEPM 2013 Fractions - Silica gel cleanup - Continued",
     "EP075(SIM)A: Phenolic Compounds","EP080/071: Total Petroleum Hydrocarbons","EP080/071: Total Recoverable Hydrocarbons - NEPM 2013 Fractions",
     "EP080: BTEXN","MW006: Thermotolerant Coliforms & E.coli by MF","EP075(SIM)S: Phenolic Compound Surrogates",
-    "EP075(SIM)T: PAH Surrogates","EP080S: TPH(V)/BTEX Surrogates"
+    "EP075(SIM)T: PAH Surrogates","EP080S: TPH(V)/BTEX Surrogates","EA005P: pH by PC Titrator","EA015: Total Dissolved Solids dried at 180 ± 5 °C","EK059G: Nitrite plus Nitrate as N (NOx) by Discrete Analyser",
+    "EK061G: Total Kjeldahl Nitrogen By Discrete Analyser","EK062G: Total Nitrogen as N (TKN + NOx) by Discrete Analyser","EK067G: Total Phosphorus as P by Discrete Analyser",
+    "EP005: Total Organic Carbon (TOC)", "EP030: Biochemical Oxygen Demand (BOD)","MW006: Thermotolerant Coliforms & E.coli by MF"
 ]
 
 
@@ -174,7 +176,9 @@ PARTIAL_MATCH_MAP = {
       normalize(">C10 - C16 Fraction minus Naphthalene (F2)"): "TRH C10 - C16 Fraction minus Naphthalene",
       normalize("^ C6 - C10 Fraction minus BTEX C6_C10-BTEX (F1)"): "TRH NEPMC6 - C10 Fraction minus BTEX",
       normalize ("Total Dissolved Solids @180°C"): "TDS",
-      normalize("Escherichia coli"): "E. coli"
+      normalize("Escherichia coli"): "E. coli",
+      normalize("pH Value"): "pH",
+      normalize("Total Phosphorus as P"): "Total Phosphorus"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
