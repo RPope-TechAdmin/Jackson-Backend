@@ -244,9 +244,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                         key = (sample_location, sample_datetime)
                         if key not in combined_rows:
                             combined_rows[key] = {
-                                "File Name": f"'{file_name}'" if file_name else "NULL",
-                                "Sample Location": f"'{sample_location}'",
-                                "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
+                                "File Name": file_name or None,
+                                "Sample Location": sample_location,
+                                "Sampling Date/Time": sample_datetime if sample_datetime != "NULL" else None
                             }
                             logging.info(f"File: {file_name}")
                             logging.info(f"Location: {sample_location}")
@@ -358,22 +358,20 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         rows = []
         for row_dict in combined_rows.values():
             row_values = []
-            for i, field in enumerate(target_fields):
-                val = row_dict.get(field, "NULL")
+        for i, field in enumerate(target_fields):
+            val = row_dict.get(field)
 
-                if i < 3:
-                    # Quote first 3 fields
-                    if val == "NULL":
-                        row_values.append("NULL")
-                    else:
-                        val = val.strip("'").replace("'", "''")
-                        row_values.append(f"'{val}'")
+            if i < 3:  # first three fields are text
+                if not val:
+                    row_values.append("NULL")
                 else:
-                    # Only allow numeric values or NULL
-                    if re.match(r'^-?\d+(\.\d+)?$', val):
-                        row_values.append(val)
-                    else:
-                        row_values.append("NULL")
+                    val = val.replace("'", "''")
+                    row_values.append(f"'{val}'")
+            else:      # numeric
+                if val and re.match(r'^-?\d+(\.\d+)?$', val):
+                    row_values.append(val)
+                else:
+                    row_values.append("NULL")
 
             rows.append(f"           ({', '.join(row_values)})")
 
