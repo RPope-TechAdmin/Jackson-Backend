@@ -302,11 +302,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                             # Check for known partial match                         
                             if not match:
                                 logging.info(f"No CAS match for {analyte}")
-                                for key, val in PARTIAL_MATCH_MAP.items():
-                                    if key in normalized_analyte:
-                                        match = val
-                                        logging.info(f"Partial substring match override: '{analyte}' → '{match}'")
-                                        break
+                                mapped = PARTIAL_MATCH_MAP.get(normalized_analyte)
+                                if mapped and mapped in analyte_fields:
+                                    match = mapped
+                                    logging.info(f"Partial match override: '{analyte}' → '{match}'")
+                                    break
 
                             # Match abbreviation if fuzzy fails
                             if not match:
