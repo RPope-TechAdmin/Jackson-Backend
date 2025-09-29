@@ -241,6 +241,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 "Sample Location": f"'{sample_location}'",
                                 "Sampling Date/Time": f"'{sample_datetime}'" if sample_datetime != "NULL" else "NULL"
                             }
+                            logging.info(f"File: {file_name}")
+                            logging.info(f"Location: {sample_location}")
+                            logging.info(f"Sample Date: {sample_datetime}")
 
                         row_dict = combined_rows[key]
 
