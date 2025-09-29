@@ -129,7 +129,7 @@ CAS_TO_FULL = {
     "460-00-4": "4-Bromofluorobenzene",
 }
 
-NON_ANALYTE_LABELS = [
+RAW_NON_ANALYTE_LABELS = [
     "results", "result", "cas number", "parameter", "compound", "unit",
     "sampling date", "sample id", "sub-matrix", "matrix",
     "ep075", "ep080", "eg020t", "phenolic compounds", "btexn",
@@ -181,6 +181,8 @@ PARTIAL_MATCH_MAP = {
       normalize("ph"): "pH",
       normalize("Total Phosphorus as P"): "Total Phosphorus"
 }
+
+NON_ANALYTE_LABELS = [normalize(label) for label in RAW_NON_ANALYTE_LABELS]
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
