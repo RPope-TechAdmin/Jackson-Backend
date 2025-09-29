@@ -178,6 +178,7 @@ PARTIAL_MATCH_MAP = {
       normalize ("Total Dissolved Solids @180°C"): "TDS",
       normalize("Escherichia coli"): "E. coli",
       normalize("pH Value"): "pH",
+      normalize("ph"): "pH",
       normalize("Total Phosphorus as P"): "Total Phosphorus"
 }
 
@@ -307,6 +308,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                                 else:
                                     match = None
                             
+                            if not match:
+                                for key, val in PARTIAL_MATCH_MAP.items():
+                                    if key in normalized_analyte:
+                                        match = val
+                                        logging.info(f"Partial substring match override: '{analyte}' → '{match}'")
+                                        break
+
                             # Match abbreviation if fuzzy fails
                             if not match:
                                 logging.info(f"No partial match identified for {analyte}")
