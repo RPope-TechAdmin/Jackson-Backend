@@ -358,20 +358,22 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         rows = []
         for row_dict in combined_rows.values():
             row_values = []
-        for i, field in enumerate(target_fields):
-            val = row_dict.get(field)
+            for i, field in enumerate(target_fields):
+                val = row_dict.get(field, "NULL")
 
-            if i < 3:  # first three fields are text
-                if not val:
-                    row_values.append("NULL")
+                if i < 3:
+                    # Quote first 3 fields
+                    if val == "NULL":
+                        row_values.append("NULL")
+                    else:
+                        val = val.strip("'").replace("'", "''")
+                        row_values.append(f"'{val}'")
                 else:
-                    val = val.replace("'", "''")
-                    row_values.append(f"'{val}'")
-            else:      # numeric
-                if val and re.match(r'^-?\d+(\.\d+)?$', val):
-                    row_values.append(val)
-                else:
-                    row_values.append("NULL")
+                    # Only allow numeric values or NULL
+                    if re.match(r'^-?\d+(\.\d+)?$', val):
+                        row_values.append(val)
+                    else:
+                        row_values.append("NULL")
 
             rows.append(f"           ({', '.join(row_values)})")
 
