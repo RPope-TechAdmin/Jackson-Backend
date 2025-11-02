@@ -72,7 +72,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         username = os.environ["SQL_USER"]
         password = os.environ["SQL_PASSWORD"]
         server = os.environ["SQL_SERVER"]
-        db = os.environ["SQL_DB"]
+        db = os.environ["SQL_DB_FEEDBACK"]
         table="[Narangba].[Feedback]"
         variables="[Name], [Feedback]"
 
