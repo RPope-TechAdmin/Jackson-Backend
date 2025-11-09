@@ -10,4 +10,4 @@ python-multipart
 flask
 openpyxl
 pyodbc
-docx
+python-docx
