@@ -1,18 +1,17 @@
 {
+  "scriptFile": "__init__.py",
   "bindings": [
     {
-      "authLevel": "anonymous",
+      "authLevel": "function",
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": ["post", "get", "options"],
-      "route": "lab-data"
+      "methods": ["get", "post"]
     },
     {
       "type": "http",
       "direction": "out",
       "name": "$return"
     }
-  ],
-  "scriptFile": "__init__.py"
+  ]
 }
