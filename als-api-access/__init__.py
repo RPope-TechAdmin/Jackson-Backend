@@ -15,7 +15,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         # Authenticate with third-party API
         auth_resp = requests.post(
-            "https://als-client-api.azurewebsites.net/api/user/authenticate",
+            "https://als-client-api-testing.azurewebsites.net/api/user/authenticate",
             json={"Data": "string", "Username": username, "Password": password},
             timeout=10,
         )
