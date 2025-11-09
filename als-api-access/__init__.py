@@ -8,7 +8,7 @@ import azure.functions as func
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("Authenticating with ALS API...")
     try:
-        api_url = "https://als-client-api-testing.azurewebsites.net/api/user/authenticate"
+        api_url = "https://als-client-api.azurewebsites.net/api/user/authenticate"
 
         username = os.environ["API_USERNAME"]
         password = os.environ["API_PASSWORD"]
