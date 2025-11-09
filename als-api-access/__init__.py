@@ -20,7 +20,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         # Some ALS API instances reject "Data": "string"; using null is often correct.
         payload = {
-            "Data": None,
             "Username": username,
             "Password": password,
         }
