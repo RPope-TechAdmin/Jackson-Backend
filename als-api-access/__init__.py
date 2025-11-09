@@ -13,6 +13,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         username = os.environ["API_USERNAME"]
         password = os.environ["API_PASSWORD"]
 
+        logging.info(f"User: {username}")
+        logging.info(f"Password: {password}")
+
         headers = {
             "accept": "application/json;odata.metadata=minimal;odata.streaming=true",
             "Content-Type": "application/json;odata.metadata=minimal;odata.streaming=true",
