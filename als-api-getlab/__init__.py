@@ -38,10 +38,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         auth_resp = requests.post(auth_url, headers=auth_headers, json=auth_payload, timeout=10)
         auth_resp.raise_for_status()
 
-        token = auth_resp.json().get("Token") or auth_resp.json().get("token")
-        if not token:
-            raise ValueError("No token returned from authentication response.")
+        auth_data = auth_resp.json()
 
+        # Support multiple possible token structures
+        token = (
+            auth_data.get("Token")
+            or auth_data.get("token")
+            or (auth_data.get("Data", {}).get("Token"))
+            or (auth_data.get("data", {}).get("token"))
+        )
+
+        if not token:
+            raise ValueError(f"No token found in auth response: {auth_data}")
+        
         # === Step 2: Fetch data ===
         params = {
             "From": from_param,
@@ -55,6 +64,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         }
 
         data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
+        if data_resp.status_code == 401:
+            # Retry once using plain token (some ALS APIs require this)
+            logging.warning("Bearer header rejected — retrying with raw token header.")
+            data_headers = {
+                "Accept": "application/json",
+                "Authorization": token,
+            }
+            data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
+
         data_resp.raise_for_status()
         data = data_resp.json()
 
