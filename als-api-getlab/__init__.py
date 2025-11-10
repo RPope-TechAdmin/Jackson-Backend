@@ -8,7 +8,7 @@ import azure.functions as func
 from docx import Document
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Fetching data and generating Word document...")
+    logging.info("Authenticating Login...")
 
     try:
         # === Load environment variables ===
@@ -32,6 +32,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         token = auth_resp.json().get("Token") or auth_resp.json().get("token")
         if not token:
+            logging.error("No Token Returned")
             raise ValueError("No token returned from authentication response.")
 
         # === Step 2: Fetch data ===
@@ -39,6 +40,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             "Accept": "application/json",
             "Authorization": f"Bearer {token}",
         }
+
+        logging.info(f"Collected Headers:{data_headers}")
 
         data_resp = requests.get(data_url, headers=data_headers, timeout=15)
         data_resp.raise_for_status()
