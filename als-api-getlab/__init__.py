@@ -5,17 +5,25 @@ import json
 import logging
 import requests
 import azure.functions as func
+from datetime import datetime, timedelta
 from docx import Document
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Authenticating Login...")
+    logging.info("Fetching data and generating Word document...")
 
     try:
-        # === Load environment variables ===
-        auth_url = "https://als-client-api.azurewebsites.net/api/user/authenticate"
+        # === Environment variables ===
+        auth_url = os.environ["API_AUTH_URL"]
         data_url = os.environ["API_DATA_URL"]
         username = os.environ["API_USERNAME"]
         password = os.environ["API_PASSWORD"]
+
+        # Default: last 7 days, page=1
+        to_dt = datetime.utcnow()
+        from_dt = to_dt - timedelta(days=7)
+        from_param = from_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
+        to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
+        page_param = "1"
 
         # === Step 1: Authenticate ===
         auth_headers = {
@@ -32,18 +40,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         token = auth_resp.json().get("Token") or auth_resp.json().get("token")
         if not token:
-            logging.error("No Token Returned")
             raise ValueError("No token returned from authentication response.")
 
         # === Step 2: Fetch data ===
+        params = {
+            "From": from_param,
+            "To": to_param,
+            "Page": page_param,
+        }
+
         data_headers = {
             "Accept": "application/json",
             "Authorization": f"Bearer {token}",
         }
 
-        logging.info(f"Collected Headers:{data_headers}")
-
-        data_resp = requests.get(data_url, headers=data_headers, timeout=15)
+        data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
         data_resp.raise_for_status()
         data = data_resp.json()
 
@@ -51,9 +62,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         doc = Document()
         doc.add_heading("API Data Export", level=1)
         doc.add_paragraph(f"Fetched from: {data_url}")
+        doc.add_paragraph(f"From: {from_param}")
+        doc.add_paragraph(f"To: {to_param}")
+        doc.add_paragraph(f"Page: {page_param}")
         doc.add_paragraph("")
 
-        # Write key-value pairs recursively (simplified)
         def write_json_to_doc(d, indent=0):
             for key, value in d.items():
                 if isinstance(value, dict):
@@ -79,29 +92,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 else:
                     doc.add_paragraph(str(item))
 
-        # === Step 4: Save to memory and return ===
+        # === Step 4: Save and return ===
         file_stream = io.BytesIO()
         doc.save(file_stream)
         file_stream.seek(0)
 
+        filename = f"api_data_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.docx"
         return func.HttpResponse(
             body=file_stream.read(),
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={
-                "Content-Disposition": 'attachment; filename="api_data.docx"'
-            },
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
             status_code=200,
         )
 
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Request failed: {e}")
-        return func.HttpResponse(
-            json.dumps({"error": str(e)}),
-            mimetype="application/json",
-            status_code=500,
-        )
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
+        logging.error(f"Error: {e}")
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
             mimetype="application/json",
