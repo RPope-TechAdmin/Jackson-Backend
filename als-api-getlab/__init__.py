@@ -37,7 +37,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         auth_resp = requests.post(auth_url, headers=auth_headers, json=auth_payload, timeout=10)
         auth_resp.raise_for_status()
-
         auth_data = auth_resp.json()
 
         # Support multiple possible token structures
@@ -47,30 +46,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             or (auth_data.get("Data", {}).get("Token"))
             or (auth_data.get("data", {}).get("token"))
         )
-
         if not token:
             raise ValueError(f"No token found in auth response: {auth_data}")
         
         # === Step 2: Fetch data ===
-        params = {
-            "From": from_param,
-            "To": to_param,
-            "Page": page_param,
-        }
-
-        data_headers = {
-            "Accept": "application/json",
-            "Authorization": f"Bearer {token}",
-        }
+        params = {"From": from_param, "To": to_param, "Page": page_param}
+        data_headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
 
         data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
         if data_resp.status_code == 401:
-            # Retry once using plain token (some ALS APIs require this)
             logging.warning("Bearer header rejected — retrying with raw token header.")
-            data_headers = {
-                "Accept": "application/json",
-                "Authorization": token,
-            }
+            data_headers["Authorization"] = token
             data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
 
         data_resp.raise_for_status()
@@ -86,42 +72,36 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         doc.add_paragraph("")
 
         def write_json_to_doc(d, indent=0):
-            for key, value in d.items():
-                if isinstance(value, dict):
-                    doc.add_paragraph(" " * indent + f"{key}:", style="List Bullet")
-                    write_json_to_doc(value, indent + 2)
-                elif isinstance(value, list):
-                    doc.add_paragraph(" " * indent + f"{key}:")
-                    for item in value:
-                        if isinstance(item, dict):
-                            write_json_to_doc(item, indent + 4)
-                        else:
-                            doc.add_paragraph(" " * (indent + 2) + str(item))
-                else:
-                    doc.add_paragraph(" " * indent + f"{key}: {value}")
+            """Recursively write JSON key/value pairs into the Word document."""
+            if isinstance(d, dict):
+                for key, value in d.items():
+                    if isinstance(value, (dict, list)):
+                        doc.add_paragraph(" " * indent + f"{key}:", style="List Bullet")
+                        write_json_to_doc(value, indent + 2)
+                    else:
+                        doc.add_paragraph(" " * indent + f"{key}: {value}")
+            elif isinstance(d, list):
+                for item in d:
+                    write_json_to_doc(item, indent + 2)
+            else:
+                doc.add_paragraph(str(d))
 
-        if isinstance(data, dict):
-            write_json_to_doc(data)
-        elif isinstance(data, list):
-            for item in data:
-                if isinstance(item, dict):
-                    write_json_to_doc(item)
-                    doc.add_paragraph("---")
-                else:
-                    doc.add_paragraph(str(item))
+        write_json_to_doc(data)
 
-        # === Step 4: Save and return ===
+        # === Step 4: Return file (in-memory, no disk I/O) ===
         file_stream = io.BytesIO()
         doc.save(file_stream)
         file_stream.seek(0)
 
         filename = f"api_data_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.docx"
+
         return func.HttpResponse(
-            open(filename, "rb").read(),
+            body=file_stream.getvalue(),
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
                 "Content-Disposition": f"attachment; filename={filename}"
-            }
+            },
+            status_code=200,
         )
 
     except Exception as e:
