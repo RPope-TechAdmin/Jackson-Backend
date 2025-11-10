@@ -117,10 +117,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         filename = f"api_data_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.docx"
         return func.HttpResponse(
-            body=file_stream.read(),
+            open(filename, "rb").read(),
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-            status_code=200,
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
         )
 
     except Exception as e:
