@@ -12,9 +12,27 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         # === Load environment variables ===
+        auth_url = "https://als-client-api.azurewebsites.net/api/user/authenticate"
         data_url = os.environ["API_DATA_URL"]
+        username = os.environ["API_USERNAME"]
+        password = os.environ["API_PASSWORD"]
 
-        token=os.environ["ALS_API_TOKEN"]
+        # === Step 1: Authenticate ===
+        auth_headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
+        }
+        auth_payload = {
+            "Username": username,
+            "Password": password,
+        }
+
+        auth_resp = requests.post(auth_url, headers=auth_headers, json=auth_payload, timeout=10)
+        auth_resp.raise_for_status()
+
+        token = auth_resp.json().get("Token") or auth_resp.json().get("token")
+        if not token:
+            raise ValueError("No token returned from authentication response.")
 
         # === Step 2: Fetch data ===
         data_headers = {
