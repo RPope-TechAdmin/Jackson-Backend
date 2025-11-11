@@ -1,7 +1,11 @@
-import azure.functions as func
+import os
+import io
 import json
 import logging
-from datetime import datetime
+import requests
+import azure.functions as func
+from datetime import datetime, timedelta
+from docx import Document
 from pathlib import Path
 
 cors_headers = {
@@ -211,6 +215,86 @@ PROJECT_MAP = {
     "Treated Effluent": "TreatedEffluent",
     "BR Project": "BioRemediation"
 }
+
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Fetching data and generating Word document...")
+
+    try:
+        # === Environment variables ===
+        auth_url = os.environ["API_AUTH_URL"]
+        data_url = os.environ["API_DATA_URL"]
+        username = os.environ["API_USERNAME"]
+        password = os.environ["API_PASSWORD"]
+
+        # Default: last 7 days, page=1
+        to_dt = datetime.utcnow()
+        from_dt = to_dt - timedelta(days=14)
+        from_param = from_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
+        to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
+        page_param = "1"
+
+        # === Step 1: Authenticate ===
+        auth_headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
+        }
+        auth_payload = {
+            "Username": username,
+            "Password": password,
+        }
+
+        auth_resp = requests.post(auth_url, headers=auth_headers, json=auth_payload, timeout=10)
+        auth_resp.raise_for_status()
+        auth_data = auth_resp.json()
+
+        # Support multiple possible token structures
+        token = (
+            auth_data.get("Token")
+            or auth_data.get("token")
+            or (auth_data.get("Data", {}).get("Token"))
+            or (auth_data.get("data", {}).get("token"))
+        )
+        if not token:
+            raise ValueError(f"No token found in auth response: {auth_data}")
+        
+        # === Step 2: Fetch data ===
+        params = {"From": from_param, "To": to_param, "Page": page_param}
+        data_headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+
+        data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
+        if data_resp.status_code == 401:
+            logging.warning("Bearer header rejected — retrying with raw token header.")
+            data_headers["Authorization"] = token
+            data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
+
+        data_resp.raise_for_status()
+        data = data_resp.json()
+
+        # === Generate SQL from API response ===
+        logging.info("Processing lab data from API response...")
+
+        # Optional: filter by project/workorder if needed
+        sql_statements = process_lab_json(data, project_no=None, workorder_code=None)
+
+        if sql_statements:
+            output_file = "/tmp/output_inserts.sql"  # Azure Functions' writable temp directory
+            write_sql_to_file(sql_statements, output_file)
+            logging.info(f"✅ SQL file generated: {output_file}")
+        else:
+            logging.warning("No SQL statements generated from data.")
+
+        # === Optionally return SQL as a response ===
+        return func.HttpResponse(
+            json.dumps({"message": f"Generated {len(sql_statements)} SQL insert statements."}),
+            status_code=200,
+            headers=cors_headers,
+            mimetype="application/json"
+        )
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return
+    
+
 
 def build_sql_insert(sample_records, project_table):
     """
