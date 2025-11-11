@@ -217,7 +217,7 @@ PROJECT_MAP = {
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Fetching data and generating Word document...")
+    logging.info("Fetching and filtering lab data to generate SQL...")
 
     try:
         # === Environment variables ===
@@ -226,11 +226,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         username = os.environ["API_USERNAME"]
         password = os.environ["API_PASSWORD"]
 
+        # === Get request parameters ===
+        project_no = req.params.get("project_no")
+        workorder_code = req.params.get("workorder_code")
+        from_days_ago = int(req.params.get("from_days_ago", 14))
+
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
-        from_dt = to_dt - timedelta(days=14)
+        from_dt = to_dt - timedelta(days=from_days_ago)
         from_param = from_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
         to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
+        
+        # TODO: Implement pagination if more than one page of results is expected
         page_param = "1"
 
         # === Step 1: Authenticate ===
@@ -268,33 +275,27 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
 
         data_resp.raise_for_status()
-        data = data_resp.json()
+        sample_records = data_resp.json()
 
-        # === Generate SQL from API response ===
-        logging.info("Processing lab data from API response...")
+        # === Step 3: Process data and generate SQL ===
+        sql_statements = process_lab_json(
+            sample_records,
+            project_no=project_no,
+            workorder_code=workorder_code
+        )
 
-        # Optional: filter by project/workorder if needed
-        sql_statements = process_lab_json(data, project_no=None, workorder_code=None)
-
-        if sql_statements:
-            output_file = "/tmp/output_inserts.sql"  # Azure Functions' writable temp directory
-            write_sql_to_file(sql_statements, output_file)
-            logging.info(f"✅ SQL file generated: {output_file}")
-        else:
-            logging.warning("No SQL statements generated from data.")
-
-        # === Optionally return SQL as a response ===
         return func.HttpResponse(
-            json.dumps({"message": f"Generated {len(sql_statements)} SQL insert statements."}),
-            status_code=200,
-            headers=cors_headers,
-            mimetype="application/json"
+            body=json.dumps({"sql_statements": sql_statements}),
+            mimetype="application/json",
+            status_code=200
         )
     except Exception as e:
         logging.error(f"Error: {e}")
-        return
-    
-
+        return func.HttpResponse(
+            json.dumps({"error": str(e)}),
+            mimetype="application/json",
+            status_code=500,
+        )
 
 def build_sql_insert(sample_records, project_table):
     """
