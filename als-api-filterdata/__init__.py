@@ -275,7 +275,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
 
         data_resp.raise_for_status()
-        sample_records = data_resp.json()
+        api_response_data = data_resp.json()
+
+        # The API returns a JSON-formatted string inside the 'data' field.
+        # We need to parse this string into a Python list of dictionaries.
+        if isinstance(api_response_data, dict) and 'data' in api_response_data and isinstance(api_response_data['data'], str):
+            sample_records = json.loads(api_response_data['data'])
+        else:
+            sample_records = api_response_data
 
         # === Step 3: Process data and generate SQL ===
         sql_statements = process_lab_json(
