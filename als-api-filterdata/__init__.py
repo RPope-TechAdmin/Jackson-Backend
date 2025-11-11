@@ -276,12 +276,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         data_resp.raise_for_status()
         api_response_data = data_resp.json()
+        logging.info(f"API response data type: {type(api_response_data)}")
+        logging.info(f"API response data content: {str(api_response_data)[:500]}") # Log first 500 chars
 
         # The API returns a JSON-formatted string inside the 'data' field.
         # We need to parse this string into a Python list of dictionaries.
         if isinstance(api_response_data, dict) and 'data' in api_response_data and isinstance(api_response_data['data'], str):
+            logging.info("API response is a dict with a 'data' string. Parsing 'data' string.")
             sample_records = json.loads(api_response_data['data'])
         else:
+            logging.info("API response is not a dict with a 'data' string. Using as is.")
             sample_records = api_response_data
 
         # === Step 3: Process data and generate SQL ===
@@ -309,6 +313,8 @@ def build_sql_insert(sample_records, project_table):
     Build one SQL INSERT per sample group.
     Includes all mapped analytes as columns; NULL where not found.
     """
+    logging.info(f"Building SQL for project table: {project_table}")
+    logging.info(f"Type of sample_records in build_sql_insert: {type(sample_records)}")
     fields = TABLE_FIELD_MAP.get(project_table, set())
     if not fields:
         logging.warning(f"No field mapping for table {project_table}")
@@ -316,6 +322,8 @@ def build_sql_insert(sample_records, project_table):
 
     first_record = sample_records[0]
     values = {field: "NULL" for field in fields}
+    logging.info(f"Type of first_record in build_sql_insert: {type(first_record)}")
+    logging.info(f"First record content: {str(first_record)[:500]}")
 
     # Static fields
     if "File" in fields:
@@ -353,8 +361,12 @@ def process_lab_json(data, project_no=None, workorder_code=None):
     """
     Groups JSON lab data by sample and generates SQL inserts.
     """
+    logging.info(f"Processing lab JSON. Data type: {type(data)}")
     if isinstance(data, str):
+        logging.info("Data is a string, attempting to parse JSON.")
         data = json.loads(data)
+    
+    logging.info(f"Data type after initial check: {type(data)}")
 
     # Optional filtering
     filtered = [
