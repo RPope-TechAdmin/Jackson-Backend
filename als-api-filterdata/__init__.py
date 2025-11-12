@@ -379,12 +379,16 @@ def process_lab_json(data, project_no=None, workorder_code=None):
     logging.info(f"Data type after initial check: {type(data)}")
 
     # Optional filtering
+    logging.info(f"Filtering with project_no: '{project_no}' and workorder_code: '{workorder_code}'")
     filtered = [
         rec for rec in data
         if (not project_no or str(rec.get("ProjectNo")) == str(project_no))
         and (not workorder_code or str(rec.get("WorkorderCode")) == str(workorder_code))
     ]
 
+    logging.info(f"Found {len(filtered)} records after filtering.")
+    if filtered:
+        logging.info(f"First filtered record: {str(filtered[0])[:500]}")
     if not filtered:
         logging.warning("No matching records found.")
         return []
