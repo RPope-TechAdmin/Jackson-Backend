@@ -233,7 +233,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # === Get request parameters ===
         project_no = req.params.get("project_no")
         workorder_code = req.params.get("workorder_code")
-        from_days_ago = int(req.params.get("from_days_ago", 14))
+        from_days_ago = int(req.params.get("from_days_ago", 62))
 
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
@@ -367,7 +367,7 @@ def build_sql_insert(sample_records, project_table):
     # Generate SQL
     field_list = ", ".join([f"[{f}]" for f in fields])
     value_list = ", ".join([values[f] for f in fields])
-    sql = f"INSERT INTO [{project_table}] ({field_list}) VALUES ({value_list});"
+    sql = f"INSERT INTO [Jackson].[{project_table}] ({field_list}) VALUES ({value_list});"
     return sql
 
 
