@@ -40,14 +40,14 @@ TABLE_FIELD_MAP = {
         "File","Sample Date","Sample Name","pH Value","Total Dissolved Solids @180°C","Nitrite + Nitrate as N","Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Phosphorus as P"
         ,"Total Organic Carbon","Biochemical Oxygen Demand","Escherichia coli"
     },
-    "Dust Suppression": {
+    "DustSuppression": {
         "File","Sample Location","Sample Date","Arsenic","Beryllium","Cadmium","Chromium","Copper","Cobalt","Nickel","Lead","Zinc","Manganese","Selenium","Silver","Vanadium","Boron"
         ,"Mercury","Total Organic Carbon","C10 - C14 Fraction","C15 - C28 Fraction","C29 - C36 Fraction","C10 - C36 Fraction (sum)",">C10 - C16 Fraction",">C16 - C34 Fraction",">C34 - C40 Fraction"
         ,">C10 - C40 Fraction (sum)",">C10 - C16 Fraction minus Naphthalene (F2)","Phenol","2-Chlorophenol","2-Methylphenol","3- & 4-Methylphenol","2-Nitrophenol","2.4-Dimethylphenol","2.4-Dichlorophenol"
         ,"2.6-Dichlorophenol","4-Chloro-3-methylphenol","2.4.6-Trichlorophenol","2.4.5-Trichlorophenol","Pentachlorophenol","Sum of Phenols","C6 - C9 Fraction","C6 - C10 Fraction","C6 - C10 Fraction minus BTEX (F1)"
         ,"Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes","Sum of BTEX","Naphthalene","Escherichia coli","Sodium","Potassium","Magnesium","Calcium"
     },
-    "Environmental Creek": {
+    "EnvironmentalCreek": {
         "File","Sample Date","Sample Location","Suspended Solids (SS)","Total Organic Carbon","Arsenic","Cadmium","Chromium","Copper","Lead","Nickel","Zinc","Mercury","Perfluorobutane sulfonic acid (PFBS)"
         ,"Perfluoropentane sulfonic acid (PFPeS)","Perfluorohexane sulfonic acid (PFHxS)","Perfluoroheptane sulfonic acid (PFHpS)","Perfluorooctane sulfonic acid (PFOS)","Perfluorodecane sulfonic acid (PFDS)"
         ,"Perfluorobutanoic acid (PFBA)","Perfluoropentanoic acid (PFPeA)","Perfluorohexanoic acid (PFHxA)","Perfluoroheptanoic acid (PFHpA)","Perfluorooctanoic acid (PFOA)","Perfluorononanoic acid (PFNA)"
@@ -61,7 +61,11 @@ TABLE_FIELD_MAP = {
         "File","Sample Date","Sample Name","pH Value","Total Dissolved Solids @180°C","Nitrite + Nitrate as N","Total Kjeldahl Nitrogen as N","Total Nitrogen as N"
         ,"Total Phosphorus as P","Total Organic Carbon","Biochemical Oxygen Demand","Escherichia coli"
     },
-    "PFAS Solid/Liquid": {
+    "TreatedEffluent": {
+        "File","Sample Date","Sample Name","pH Value","Total Dissolved Solids @180°C","Nitrite + Nitrate as N","Total Kjeldahl Nitrogen as N","Total Nitrogen as N"
+        ,"Total Phosphorus as P","Total Organic Carbon","Biochemical Oxygen Demand","Escherichia coli"
+    },
+    "PFASSolid/Liquid": {
         "File","Sample Location","Sample Date","Perfluorobutane sulfonic acid (PFBS)","Perfluoropentane sulfonic acid (PFPeS)","Perfluorohexane sulfonic acid (PFHxS)","Perfluoroheptane sulfonic acid (PFHpS)"
         ,"Perfluorooctane sulfonic acid (PFOS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)","Perfluoropentanoic acid (PFPeA)","Perfluorohexanoic acid (PFHxA)"
         ,"Perfluoroheptanoic acid (PFHpA)","Perfluorooctanoic acid (PFOA)","Perfluorononanoic acid (PFNA)","Perfluorodecanoic acid (PFDA)","Perfluoroundecanoic acid (PFUnDA)","Perfluorododecanoic acid (PFDoDA)"
