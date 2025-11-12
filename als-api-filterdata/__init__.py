@@ -394,7 +394,7 @@ def process_lab_json(data, project_no=None, workorder_code=None):
         return []
 
     # Determine project table via PROJECT_MAP
-    project_name = filtered[0].get("Site") or filtered[0].get("ProjectName")
+    project_name = filtered[0].get("ProjectNo") or filtered[0].get("Site")
     project_table = PROJECT_MAP.get(project_name, None)
     if not project_table:
         logging.warning(f"No project table for project: {project_name}")
