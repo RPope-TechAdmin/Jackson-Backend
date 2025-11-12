@@ -299,10 +299,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             workorder_code=workorder_code
         )
 
+        # === Step 4: Return SQL file ===
+        sql_content = "\n".join(sql_statements)
+        filename = f"lab_data_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.sql"
+
         return func.HttpResponse(
-            body=json.dumps({"sql_statements": sql_statements}),
-            mimetype="application/json",
-            status_code=200
+            body=sql_content,
+            mimetype="application/sql",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
         )
     except Exception as e:
         logging.error(f"Error: {e}")
