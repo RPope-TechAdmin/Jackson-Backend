@@ -281,11 +281,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         # The API returns a JSON-formatted string inside the 'data' field.
         # We need to parse this string into a Python list of dictionaries.
-        if isinstance(api_response_data, dict) and 'data' in api_response_data and isinstance(api_response_data['data'], str):
-            logging.info("API response is a dict with a 'data' string. Parsing 'data' string.")
-            sample_records = json.loads(api_response_data['data'])
+        if isinstance(api_response_data, dict):
+            if 'data' in api_response_data and isinstance(api_response_data['data'], str):
+                logging.info("API response is a dict with a 'data' string. Parsing 'data' string.")
+                sample_records = json.loads(api_response_data['data'])
+            elif 'Results' in api_response_data:
+                logging.info("API response is a dict with a 'Results' list. Using 'Results'.")
+                sample_records = api_response_data['Results']
         else:
-            logging.info("API response is not a dict with a 'data' string. Using as is.")
+            logging.info("API response is not a recognized dict format. Using as is.")
             sample_records = api_response_data
 
         # === Step 3: Process data and generate SQL ===
