@@ -20,7 +20,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
-        from_dt = to_dt - timedelta(days=7)
+        from_dt = to_dt - timedelta(days=62)
         from_param = from_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
         to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
         page_param = "1"
