@@ -384,12 +384,21 @@ def process_lab_json(data, project_no=None, workorder_code=None):
 
     # Optional filtering
     logging.info(f"Filtering with project_no: '{project_no}' and workorder_code: '{workorder_code}'")
+    def norm(val):
+        """Normalise values for reliable matching."""
+        if val is None:
+            return ""
+        return str(val).strip().lower().replace("(", "").replace(")", "")
+
+    pn = norm(project_no)
+    wo = norm(workorder_code)
+
     filtered = [
         rec for rec in data
-        if (not project_no or str(rec.get("ProjectNo")) == str(project_no))
-        and (not workorder_code or str(rec.get("WorkorderCode")) == str(workorder_code))
+        if (not pn or norm(rec.get("ProjectNo")) == pn)
+        and (not wo or norm(rec.get("WorkorderCode")) == wo)
     ]
-
+    
     logging.info(f"Found {len(filtered)} records after filtering.")
     if filtered:
         logging.info(f"First filtered record: {str(filtered[0])[:500]}")
