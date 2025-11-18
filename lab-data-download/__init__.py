@@ -31,7 +31,8 @@ GROUP_TO_TABLE: Dict[str, str] = {
     "pfasin": "Jackson.PFASInSitu",
     "envin": "Jackson.EnvironmentalInSitu",
     "tchanning": "Jackson.LittleTchanningTotalPFAS",
-    "moonapools": "Jackson.MoonaPoolsTotalPFAS"  
+    "moonapools": "Jackson.MoonaPoolsTotalPFAS",  
+    "cstotal": "Jackson.Contaminated Soils"
 }
 
 # Whitelist analyte columns per table to avoid SQL injection via column names.
@@ -126,6 +127,14 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
     },
     "Jackson.SWInt": {
         "Sulfate as SO4 - Turbidimetric","Chloride","Fluoride","Total Organic Carbon","Chemical Oxygen Demand"
+    },
+    "Jackson.Contaminated Soils": {
+        "Moisture Content","Antimony","Arsenic","Cadmium","Chromium","Cobalt","Lead","Molybdenum","Nickel","Selenium","Silver","Tin","Vanadium","Zinc","Thallium","Mercury","Initial pH","After HCl pH","Extraction Fluid Number","Final pH","Extraction Fluid Number ZHE","C10 - C14 Fraction"
+        ,"C15 - C28 Fraction","C29 - C36 Fraction","C10 - C36 Fraction (sum)",">C10 - C16 Fraction",">C16 - C34 Fraction",">C34 - C40 Fraction",">C10 - C40 Fraction (sum)",">C10 - C16 Fraction minus Naphthalene (F2)","C6 - C9 Fraction","C6 - C10 Fraction","C6 - C10 Fraction  minus BTEX (F1)"
+        ,"Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes","Sum of BTEX","Naphthalene","TCLP Chloride","TCLP Antimony","TCLP Arsenic","TCLP Cadmium","TCLP Chromium","TCLP Cobalt","TCLP Lead","TCLP Nickel","TCLP Selenium","TCLP Silver","TCLP Tin","TCLP Vanadium"
+        ,"TCLP Zinc","TCLP Molybdenum","TCLP Thallium","TCLP Mercury","TCLP C10 - C14 Fraction","TCLP C15 - C28 Fraction","TCLP C29 - C36 Fraction","TCLP C10 - C36 Fraction (sum)","TCLP >C10 - C16 Fraction","TCLP >C16 - C34 Fraction","TCLP >C34 - C40 Fraction","TCLP >C10 - C40 Fraction (sum)"
+        ,"TCLP >C10 - C16 Fraction minus Naphthalene (F2)","ZHE C6 - C9 Fraction","ZHE C6 - C10 Fraction","ZHE C6 - C10 Fraction  minus BTEX (F1)","ZHE Benzene","ZHE Toluene","ZHE Ethylbenzene","ZHE meta- & para-Xylene","ZHE ortho-Xylene","ZHE Total Xylenes","ZHE Sum of BTEX"
+        "ZHE Naphthalene"
     }
 }
 
@@ -147,7 +156,8 @@ TABLE_ID_COLUMNS: Dict[str, List[str]] = {
     "Jackson.PFASInSitu": ["Sample Date","Test Type"],
     "Jackson.SWAll": ["File","Sample Date", "Location"],
     "Jackson.SWPFAS": ["File","Sample Date", "Location","Test Type"],
-    "Jackson.SWInt": ["File","Sample Date", "Location"]
+    "Jackson.SWInt": ["File","Sample Date", "Location"],
+    "Jackson.Contaminated Soils": ["File","Sample Date", "Location"]
 }
 
 # ========= DB CONNECT =========
