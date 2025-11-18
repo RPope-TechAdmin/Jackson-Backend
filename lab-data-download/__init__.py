@@ -142,22 +142,22 @@ ID_COLUMNS = ["File","Sample Date", "Sample Location"]
 
 # Non-analyte identifier columns you always want back
 TABLE_ID_COLUMNS: Dict[str, List[str]] = {
-    "Jackson.DSExt": ["File","Sample Date", "Sample Location"],
-    "Jackson.DSPFAS": ["File","Sample Date", "Sample Location"],
-    "Jackson.DSInt": ["File","Sample Date", "Sample Location"],  # doesn’t have Sample Location
-    "Jackson.CCPComp": ["File","Sample Date", "Sample Location"],
-    "Jackson.IncomingEffluent": ["File", "Sample Date"],
-    "Jackson.TreatedEffluent": ["File", "Sample Date"],
-    "Jackson.EnvironmentalInSitu": ["Sample Location", "Sample Date"],
-    "Jackson.LittleTchanningTotalPFAS": ["File","Sample Date", "Location"],
-    "Jackson.MoonaPoolsTotalPFAS": ["File","Sample Date", "Location"],
-    "Jackson.LandfillSWDischarge": ["Sample Date", "DateR2"],
-    "Jackson.PhysicalInSitu": ["Sample Date"],
-    "Jackson.PFASInSitu": ["Sample Date","Test Type"],
-    "Jackson.SWAll": ["File","Sample Date", "Location"],
-    "Jackson.SWPFAS": ["File","Sample Date", "Location","Test Type"],
-    "Jackson.SWInt": ["File","Sample Date", "Location"],
-    "[Jackson.Contaminated Soils]": ["File","Sample Date", "Location"]
+    "[Jackson].[DSExt]": ["File","Sample Date", "Sample Location"],
+    "[Jackson].[DSPFAS]": ["File","Sample Date", "Sample Location"],
+    "[Jackson].[DSInt]": ["File","Sample Date", "Sample Location"],  # doesn’t have Sample Location
+    "[Jackson].[CCPComp]": ["File","Sample Date", "Sample Location"],
+    "[Jackson].[IncomingEffluent]": ["File", "Sample Date"],
+    "[Jackson].[TreatedEffluent]": ["File", "Sample Date"],
+    "[Jackson].[EnvironmentalInSitu]": ["Sample Location", "Sample Date"],
+    "[Jackson].[LittleTchanningTotalPFAS]": ["File","Sample Date", "Location"],
+    "[Jackson].[MoonaPoolsTotalPFAS]": ["File","Sample Date", "Location"],
+    "[Jackson].[LandfillSWDischarge]": ["Sample Date", "DateR2"],
+    "[Jackson].[PhysicalInSitu]": ["Sample Date"],
+    "[Jackson].[PFASInSitu]": ["Sample Date","Test Type"],
+    "[Jackson].[SWAll]": ["File","Sample Date", "Location"],
+    "[Jackson].[SWPFAS]": ["File","Sample Date", "Location","Test Type"],
+    "[Jackson].[SWInt]": ["File","Sample Date", "Location"],
+    "[Jackson].[Contaminated Soils]": ["File","Sample Date", "Location"]
 }
 
 # ========= DB CONNECT =========
