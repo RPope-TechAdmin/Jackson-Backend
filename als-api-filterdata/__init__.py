@@ -217,6 +217,7 @@ PROJECT_MAP = {
     "Spadable Samples": "Spadable",
     "Stormwater": "Stormwater",
     "Treated Effluent": "TreatedEffluent",
+    "BR project": "BioRemediation",
     "BR Project": "BioRemediation"
 }
 
