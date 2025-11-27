@@ -234,7 +234,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # === Get request parameters ===
         project_no = req.params.get("project_no")
         workorder_code = req.params.get("workorder_code")
-        from_days_ago = int(req.params.get("from_days_ago", 35))
+        from_days_ago = int(req.params.get("from_days_ago", 40))
 
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
@@ -243,7 +243,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
         
         # TODO: Implement pagination if more than one page of results is expected
-        page_param = "1"
+        page_param = ""
 
         # === Step 1: Authenticate ===
         auth_headers = {
