@@ -269,33 +269,103 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         if not token:
             raise ValueError(f"No token found in auth response: {auth_data}")
         
-        # === Step 2: Fetch data ===
-        params = {"From": from_param, "To": to_param, "Page": page_param}
+        # === Step 2: Fetch ALL PAGES of data ===
+        def extract_records(api_data):
+            """Extracts normalized list of records from any supported API structure."""
+            if isinstance(api_data, dict):
+                # Format A: {"Results": [...]}
+                if "Results" in api_data and isinstance(api_data["Results"], list):
+                    return api_data["Results"]
+
+                # Format B: {"data": "[{...}, {...}]"} where "data" is a JSON string
+                if "data" in api_data and isinstance(api_data["data"], str):
+                    try:
+                        return json.loads(api_data["data"])
+                    except Exception:
+                        logging.error("Failed to parse 'data' JSON string.")
+                        return []
+
+                # Format C: nested Data.Results
+                if "Data" in api_data and "Results" in api_data["Data"]:
+                    return api_data["Data"]["Results"]
+
+            # Fallback: assume raw list
+            if isinstance(api_data, list):
+                return api_data
+
+            logging.warning("Unrecognized API format. Returning empty result set.")
+            return []
+
+        all_records = []
+        current_page = 1
+
+        # First request (page 1)
+        params = {"From": from_param, "To": to_param, "Page": str(current_page)}
         data_headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
 
-        data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
-        if data_resp.status_code == 401:
-            logging.warning("Bearer header rejected — retrying with raw token header.")
+        logging.info(f"Fetching page {current_page}...")
+
+        resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
+        if resp.status_code == 401:
             data_headers["Authorization"] = token
-            data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
+            resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
 
-        data_resp.raise_for_status()
-        api_response_data = data_resp.json()
-        logging.info(f"API response data type: {type(api_response_data)}")
-        logging.info(f"API response data content: {str(api_response_data)[:500]}") # Log first 500 chars
+        resp.raise_for_status()
+        data_json = resp.json()
 
-        # The API returns a JSON-formatted string inside the 'data' field.
-        # We need to parse this string into a Python list of dictionaries.
-        if isinstance(api_response_data, dict):
-            if 'data' in api_response_data and isinstance(api_response_data['data'], str):
-                logging.info("API response is a dict with a 'data' string. Parsing 'data' string.")
-                sample_records = json.loads(api_response_data['data'])
-            elif 'Results' in api_response_data:
-                logging.info("API response is a dict with a 'Results' list. Using 'Results'.")
-                sample_records = api_response_data['Results']
-        else:
-            logging.info("API response is not a recognized dict format. Using as is.")
-            sample_records = api_response_data
+        # Extract page 1's data
+        page_records = extract_records(data_json)
+        all_records.extend(page_records)
+
+        # Determine total pages
+        total_pages = (
+            data_json.get("TotalPages")
+            or data_json.get("totalPages")
+            or data_json.get("Pages")
+        )
+
+        # Compute pages if API provides counts instead
+        if not total_pages:
+            total_count = (
+                data_json.get("TotalCount")
+                or data_json.get("totalCount")
+                or data_json.get("Count")
+            )
+            page_size = (
+                data_json.get("PageSize")
+                or data_json.get("pageSize")
+                or len(page_records)
+            )
+
+            if total_count and page_size:
+                total_pages = max(1, (total_count + page_size - 1) // page_size)
+
+        if not total_pages:
+            logging.info("API does not provide page counts. Assuming only 1 page.")
+            total_pages = 1
+
+        logging.info(f"Total pages detected: {total_pages}")
+
+        # Fetch remaining pages
+        for current_page in range(2, int(total_pages) + 1):
+            logging.info(f"Fetching page {current_page}...")
+
+            params["Page"] = str(current_page)
+            resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
+            if resp.status_code == 401:
+                data_headers["Authorization"] = token
+                resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
+
+            resp.raise_for_status()
+            page_json = resp.json()
+
+            page_records = extract_records(page_json)
+            all_records.extend(page_records)
+
+        logging.info(f"Total combined records fetched: {len(all_records)}")
+
+        # Replace old sample_records with combined data
+        sample_records = all_records
 
         # === Step 3: Process data and generate SQL ===
         sql_statements = process_lab_json(
