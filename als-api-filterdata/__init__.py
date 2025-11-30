@@ -243,7 +243,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
         
         # TODO: Implement pagination if more than one page of results is expected
-        page_param = "10"
+        page_param = "16"
 
         # === Step 1: Authenticate ===
         auth_headers = {
