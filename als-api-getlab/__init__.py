@@ -35,7 +35,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             "Password": password,
         }
 
-        auth_resp = requests.post(auth_url, headers=auth_headers, json=auth_payload, timeout=10)
+        auth_resp = requests.post(auth_url, headers=auth_headers, json=auth_payload, timeout=60)
         auth_resp.raise_for_status()
         auth_data = auth_resp.json()
 
@@ -53,11 +53,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         params = {"From": from_param, "To": to_param, "Page": page_param}
         data_headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
 
-        data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
+        data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
         if data_resp.status_code == 401:
             logging.warning("Bearer header rejected — retrying with raw token header.")
             data_headers["Authorization"] = token
-            data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=20)
+            data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
 
         data_resp.raise_for_status()
         data = data_resp.json()
