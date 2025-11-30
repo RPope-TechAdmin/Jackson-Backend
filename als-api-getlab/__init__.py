@@ -23,7 +23,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         from_dt = to_dt - timedelta(days=40)
         from_param = from_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
         to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
-        page_param = "10"
+        page_param = "16"
 
         # === Step 1: Authenticate ===
         auth_headers = {
