@@ -49,8 +49,23 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         if not token:
             raise ValueError(f"No token found in auth response: {auth_data}")
         
-        # === Step 2: Fetch data ===
+        # === Step 2: Fetch page data ===
         params = {"From": from_param, "To": to_param, "Page": page_param}
+        data_headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+
+        data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
+        if data_resp.status_code == 401:
+            logging.warning("Bearer header rejected — retrying with raw token header.")
+            data_headers["Authorization"] = token
+            data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
+
+        data_resp.raise_for_status()
+        data1 = data_resp.json()
+
+        page_param2=data1.get("TotalPages")
+
+        # === Step 2.5: Fetch data ===
+        params = {"From": from_param, "To": to_param, "Page": page_param2}
         data_headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
 
         data_resp = requests.get(data_url, headers=data_headers, params=params, timeout=60)
