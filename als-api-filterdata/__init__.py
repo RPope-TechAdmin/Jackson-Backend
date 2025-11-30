@@ -450,13 +450,14 @@ def process_lab_json(data, project_no=None, workorder_code=None):
     if isinstance(data, str):
         logging.info("Data is a string, attempting to parse JSON.")
         data = json.loads(data)
-    
+
     logging.info(f"Data type after initial check: {type(data)}")
 
     # Optional filtering
     logging.info(f"Filtering with project_no: '{project_no}' and workorder_code: '{workorder_code}'")
+
     def norm(val):
-        """Normalise values for reliable matching."""
+        """Normalize for reliable matching."""
         if val is None:
             return ""
         return str(val).strip().lower().replace("(", "").replace(")", "")
@@ -469,19 +470,12 @@ def process_lab_json(data, project_no=None, workorder_code=None):
         if (not pn or norm(rec.get("ProjectNo")) == pn)
         and (not wo or norm(rec.get("WorkorderCode")) == wo)
     ]
-    
+
     logging.info(f"Found {len(filtered)} records after filtering.")
     if filtered:
         logging.info(f"First filtered record: {str(filtered[0])[:500]}")
     if not filtered:
         logging.warning("No matching records found.")
-        return []
-
-    # Determine project table via PROJECT_MAP
-    project_name = filtered[0].get("ProjectNo") or filtered[0].get("Site")
-    project_table = PROJECT_MAP.get(project_name, None)
-    if not project_table:
-        logging.warning(f"No project table for project: {project_name}")
         return []
 
     # Group by (Submission, SampleID1, SampleDate)
@@ -491,13 +485,22 @@ def process_lab_json(data, project_no=None, workorder_code=None):
         grouped.setdefault(key, []).append(rec)
 
     sql_statements = []
+
+    # PATCH A — determine project table **per group**
     for records in grouped.values():
+
+        record_project = records[0].get("ProjectNo") or records[0].get("Site")
+        project_table = PROJECT_MAP.get(record_project)
+
+        if not project_table:
+            logging.warning(f"No project table found for project: {record_project}")
+            continue
+
         sql = build_sql_insert(records, project_table)
         if sql:
             sql_statements.append(sql)
 
     return sql_statements
-
 
 def write_sql_to_file(sql_statements, output_path="output_inserts.sql"):
     """
