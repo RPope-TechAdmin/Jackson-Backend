@@ -426,7 +426,8 @@ def build_sql_insert(records, table_name):
         if is_numeric(val):
             return str(val)  # unquoted numeric
 
-        return f"'{str(val).replace(\"'\", \"''\")}'"  # safe quoted string
+        escaped = str(val).replace("'", "''")
+        return f"'{escaped}'"
 
     # ---------- Merge record fields ----------
     row = {}
