@@ -395,22 +395,24 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
 def build_sql_insert(records, table_name):
     """
-    Builds a correctly formatted SQL INSERT statement using:
-    INSERT INTO [Jackson].[table] ([Field1],[Field2]...) VALUES ('text', 123, ...);
-
-    Numeric values => NO quotes
-    Strings        => Wrapped in single quotes
-    NULL           => unquoted NULL
+    Builds a SQL INSERT ensuring:
+    - Allowed fields are matched case-insensitively
+    - JSON keys are normalized so values do not get lost
+    - Numeric values remain unquoted
     """
     if not records:
         return None
 
+    # ---- Load allowed SQL table fields ----
     allowed_fields = TABLE_FIELD_MAP.get(table_name)
     if not allowed_fields:
         logging.warning(f"No field mapping for table {table_name}")
         return None
 
-    # ---------- Helpers ----------
+    # Normalized lookup map for allowed fields
+    norm_allowed = {f.lower(): f for f in allowed_fields}
+
+    # ---- Helpers ----
     def is_numeric(val):
         try:
             float(val)
@@ -419,43 +421,44 @@ def build_sql_insert(records, table_name):
             return False
 
     def sql_value(val):
-        """Return SQL-safe value based on type."""
         if val is None or (isinstance(val, str) and val.strip() == ""):
             return "NULL"
-
         if is_numeric(val):
-            return str(val)  # unquoted numeric
-
+            return str(val)
         escaped = str(val).replace("'", "''")
         return f"'{escaped}'"
 
-    # ---------- Merge record fields ----------
+    # ---- Merge all record fields ----
     row = {}
+
     for rec in records:
-        # Top-level fields
+        # Top-level first
         for k, v in rec.items():
-            if k in allowed_fields:
-                row[k] = v
+            nk = k.lower().strip()
+            if nk in norm_allowed:
+                real_key = norm_allowed[nk]
+                row[real_key] = v
 
-        # Results dictionary
-        results = rec.get("Results", {})
-        if isinstance(results, dict):
-            for k, v in results.items():
-                if k in allowed_fields:
-                    row[k] = v
+        # Now handle Results dictionary
+        res = rec.get("Results", {})
+        if isinstance(res, dict):
+            for k, v in res.items():
+                nk = k.lower().strip()
+                if nk in norm_allowed:
+                    real_key = norm_allowed[nk]
+                    row[real_key] = v
 
-    # ---------- Build SQL ----------
+    # ---- Build SQL fields & values ----
     fields = []
     values = []
 
     for field in allowed_fields:
-        fields.append(f"[{field}]")            # bracketed field names
+        fields.append(f"[{field}]")
         values.append(sql_value(row.get(field)))
 
     field_list = ",".join(fields)
     value_list = ",".join(values)
 
-    # ---------- Final SQL ----------
     return (
         f"INSERT INTO [Jackson].[{table_name}] "
         f"({field_list}) "
