@@ -393,54 +393,75 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             status_code=500,
         )
 
-def build_sql_insert(sample_records, project_table):
+def build_sql_insert(records, table_name):
     """
-    Build one SQL INSERT per sample group.
-    Includes all mapped analytes as columns; NULL where not found.
+    Builds an SQL INSERT statement from grouped records.
+    Ensures numeric values (especially in 'Results') are NOT quoted.
     """
-    logging.info(f"Building SQL for project table: {project_table}")
-    logging.info(f"Type of sample_records in build_sql_insert: {type(sample_records)}")
-    fields = TABLE_FIELD_MAP.get(project_table, set())
-    if not fields:
-        logging.warning(f"No field mapping for table {project_table}")
+    if not records:
         return None
 
-    first_record = sample_records[0]
-    values = {field: "NULL" for field in fields}
-    logging.info(f"Type of first_record in build_sql_insert: {type(first_record)}")
-    logging.info(f"First record content: {str(first_record)[:500]}")
+    # --- Fields allowed for this table ---
+    allowed_fields = TABLE_FIELD_MAP.get(table_name)
+    if not allowed_fields:
+        logging.warning(f"No field mapping for table {table_name}")
+        return None
 
-    # Static fields
-    if "File" in fields:
-        values["File"] = f"'{first_record.get('Submission', '')}'"
-    if "Sample Location" in fields:
-        values["Sample Location"] = f"'{first_record.get('SampleID1', '')}'"
-    if "Sample Name" in fields:
-        values["Sample Name"] = f"'{first_record.get('SampleID1', '')}'"
-    if "Sample Date" in fields:
-        sample_date = first_record.get("SampleDate", "")
-        if sample_date:
-            try:
-                parsed_date = datetime.strptime(sample_date, "%d/%m/%Y").strftime("%Y-%m-%d")
-            except ValueError:
-                parsed_date = sample_date
-        else:
-            parsed_date = ""
-        values["Sample Date"] = f"'{parsed_date}'"
+    # --- Helper: numeric detection ---
+    def is_numeric(val):
+        """Detect numeric values so SQL does not wrap them in quotes."""
+        if val is None:
+            return False
+        try:
+            float(val)
+            return True
+        except (ValueError, TypeError):
+            return False
 
-    # Fill analytes
-    for rec in sample_records:
-        compound = rec.get("Compound")
-        result = rec.get("Result")
-        if compound in fields and result not in [None, ""]:
-            values[compound] = f"'{result}'"
+    # --- Consolidate record values ---
+    row = {}
+    for r in records:
+        for k, v in r.items():
+            if k in allowed_fields:
+                row[k] = v
 
-    # Generate SQL
-    field_list = ", ".join([f"[{f}]" for f in fields])
-    value_list = ", ".join([values[f] for f in fields])
-    sql = f"INSERT INTO [Jackson].[{project_table}] ({field_list}) VALUES ({value_list});"
-    return sql
+        # Extract numeric Results values
+        results = r.get("Results", {})
+        if isinstance(results, dict):
+            for k, v in results.items():
+                if k in allowed_fields:
+                    row[k] = v
 
+    # --- Filter to usable fields ---
+    fields = []
+    values = []
+    for field in allowed_fields:
+        val = row.get(field)
+
+        # Null handling
+        if val is None or (isinstance(val, str) and val.strip() == ""):
+            fields.append(field)
+            values.append("NULL")
+            continue
+
+        # Numeric handling (NO QUOTES)
+        if is_numeric(val):
+            fields.append(field)
+            values.append(str(val))
+            continue
+
+        # Strings (SAFE QUOTING)
+        cleaned = str(val).replace("'", "''")
+        fields.append(field)
+        values.append(f"'{cleaned}'")
+
+    if not fields:
+        return None
+
+    fields_sql = ", ".join(fields)
+    values_sql = ", ".join(values)
+
+    return f"INSERT INTO {table_name} ({fields_sql}) VALUES ({values_sql});"
 
 def process_lab_json(data, project_no=None, workorder_code=None):
     """
