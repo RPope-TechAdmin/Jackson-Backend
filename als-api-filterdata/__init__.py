@@ -393,77 +393,53 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             status_code=500,
         )
 
-def build_sql_insert(records, table_name):
+def build_sql_insert(sample_records, project_table):
     """
-    Builds a SQL INSERT ensuring:
-    - Allowed fields are matched case-insensitively
-    - JSON keys are normalized so values do not get lost
-    - Numeric values remain unquoted
+    Build one SQL INSERT per sample group.
+    Includes all mapped analytes as columns; NULL where not found.
     """
-    if not records:
+    logging.info(f"Building SQL for project table: {project_table}")
+    logging.info(f"Type of sample_records in build_sql_insert: {type(sample_records)}")
+    fields = TABLE_FIELD_MAP.get(project_table, set())
+    if not fields:
+        logging.warning(f"No field mapping for table {project_table}")
         return None
 
-    # ---- Load allowed SQL table fields ----
-    allowed_fields = TABLE_FIELD_MAP.get(table_name)
-    if not allowed_fields:
-        logging.warning(f"No field mapping for table {table_name}")
-        return None
+    first_record = sample_records[0]
+    values = {field: "NULL" for field in fields}
+    logging.info(f"Type of first_record in build_sql_insert: {type(first_record)}")
+    logging.info(f"First record content: {str(first_record)[:500]}")
 
-    # Normalized lookup map for allowed fields
-    norm_allowed = {f.lower(): f for f in allowed_fields}
+    # Static fields
+    if "File" in fields:
+        values["File"] = f"'{first_record.get('Submission', '')}'"
+    if "Sample Location" in fields:
+        values["Sample Location"] = f"'{first_record.get('SampleID1', '')}'"
+    if "Sample Name" in fields:
+        values["Sample Name"] = f"'{first_record.get('SampleID1', '')}'"
+    if "Sample Date" in fields:
+        sample_date = first_record.get("SampleDate", "")
+        if sample_date:
+            try:
+                parsed_date = datetime.strptime(sample_date, "%d/%m/%Y").strftime("%Y-%m-%d")
+            except ValueError:
+                parsed_date = sample_date
+        else:
+            parsed_date = ""
+        values["Sample Date"] = f"'{parsed_date}'"
 
-    # ---- Helpers ----
-    def is_numeric(val):
-        try:
-            float(val)
-            return True
-        except:
-            return False
+    # Fill analytes
+    for rec in sample_records:
+        compound = rec.get("Compound")
+        result = rec.get("Result")
+        if compound in fields and result not in [None, ""]:
+            values[compound] = f"{result}"
 
-    def sql_value(val):
-        if val is None or (isinstance(val, str) and val.strip() == ""):
-            return "NULL"
-        if is_numeric(val):
-            return str(val)
-        escaped = str(val).replace("'", "''")
-        return f"'{escaped}'"
-
-    # ---- Merge all record fields ----
-    row = {}
-
-    for rec in records:
-        # Top-level first
-        for k, v in rec.items():
-            nk = k.lower().strip()
-            if nk in norm_allowed:
-                real_key = norm_allowed[nk]
-                row[real_key] = v
-
-        # Now handle Results dictionary
-        res = rec.get("Results", {})
-        if isinstance(res, dict):
-            for k, v in res.items():
-                nk = k.lower().strip()
-                if nk in norm_allowed:
-                    real_key = norm_allowed[nk]
-                    row[real_key] = v
-
-    # ---- Build SQL fields & values ----
-    fields = []
-    values = []
-
-    for field in allowed_fields:
-        fields.append(f"[{field}]")
-        values.append(sql_value(row.get(field)))
-
-    field_list = ",".join(fields)
-    value_list = ",".join(values)
-
-    return (
-        f"INSERT INTO [Jackson].[{table_name}] "
-        f"({field_list}) "
-        f"VALUES ({value_list});"
-    )
+    # Generate SQL
+    field_list = ", ".join([f"[{f}]" for f in fields])
+    value_list = ", ".join([values[f] for f in fields])
+    sql = f"INSERT INTO [Jackson].[{project_table}] ({field_list}) VALUES ({value_list});"
+    return sql
 
 def process_lab_json(data, project_no=None, workorder_code=None):
     """
