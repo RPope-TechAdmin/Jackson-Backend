@@ -395,73 +395,71 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
 def build_sql_insert(records, table_name):
     """
-    Builds an SQL INSERT statement from grouped records.
-    Ensures numeric values (especially in 'Results') are NOT quoted.
+    Builds a correctly formatted SQL INSERT statement using:
+    INSERT INTO [Jackson].[table] ([Field1],[Field2]...) VALUES ('text', 123, ...);
+
+    Numeric values => NO quotes
+    Strings        => Wrapped in single quotes
+    NULL           => unquoted NULL
     """
     if not records:
         return None
 
-    # --- Fields allowed for this table ---
     allowed_fields = TABLE_FIELD_MAP.get(table_name)
     if not allowed_fields:
         logging.warning(f"No field mapping for table {table_name}")
         return None
 
-    # --- Helper: numeric detection ---
+    # ---------- Helpers ----------
     def is_numeric(val):
-        """Detect numeric values so SQL does not wrap them in quotes."""
-        if val is None:
-            return False
         try:
             float(val)
             return True
-        except (ValueError, TypeError):
+        except:
             return False
 
-    # --- Consolidate record values ---
+    def sql_value(val):
+        """Return SQL-safe value based on type."""
+        if val is None or (isinstance(val, str) and val.strip() == ""):
+            return "NULL"
+
+        if is_numeric(val):
+            return str(val)  # unquoted numeric
+
+        return f"'{str(val).replace(\"'\", \"''\")}'"  # safe quoted string
+
+    # ---------- Merge record fields ----------
     row = {}
-    for r in records:
-        for k, v in r.items():
+    for rec in records:
+        # Top-level fields
+        for k, v in rec.items():
             if k in allowed_fields:
                 row[k] = v
 
-        # Extract numeric Results values
-        results = r.get("Results", {})
+        # Results dictionary
+        results = rec.get("Results", {})
         if isinstance(results, dict):
             for k, v in results.items():
                 if k in allowed_fields:
                     row[k] = v
 
-    # --- Filter to usable fields ---
+    # ---------- Build SQL ----------
     fields = []
     values = []
+
     for field in allowed_fields:
-        val = row.get(field)
+        fields.append(f"[{field}]")            # bracketed field names
+        values.append(sql_value(row.get(field)))
 
-        # Null handling
-        if val is None or (isinstance(val, str) and val.strip() == ""):
-            fields.append(field)
-            values.append("NULL")
-            continue
+    field_list = ",".join(fields)
+    value_list = ",".join(values)
 
-        # Numeric handling (NO QUOTES)
-        if is_numeric(val):
-            fields.append(field)
-            values.append(str(val))
-            continue
-
-        # Strings (SAFE QUOTING)
-        cleaned = str(val).replace("'", "''")
-        fields.append(field)
-        values.append(f"'{cleaned}'")
-
-    if not fields:
-        return None
-
-    fields_sql = ", ".join(fields)
-    values_sql = ", ".join(values)
-
-    return f"INSERT INTO {table_name} ({fields_sql}) VALUES ({values_sql});"
+    # ---------- Final SQL ----------
+    return (
+        f"INSERT INTO [Jackson].[{table_name}] "
+        f"({field_list}) "
+        f"VALUES ({value_list});"
+    )
 
 def process_lab_json(data, project_no=None, workorder_code=None):
     """
