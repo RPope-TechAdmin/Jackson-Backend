@@ -21,7 +21,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         # === Date range ===
         to_dt = datetime.utcnow()
-        from_dt = to_dt - timedelta(days=40)
+        from_dt = to_dt - timedelta(days=7)
         from_param = from_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
         to_param = to_dt.strftime("%Y/%m/%d %H:%M:%S.000Z")
 
