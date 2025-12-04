@@ -82,6 +82,14 @@ TABLE_FIELD_MAP = {
         ,"3- & 4-Methylphenol","4-Chloro-3-methylphenol","Pentachlorophenol","Phenol","Acenaphthene","Acenaphthylene","Anthracene","Benz(a)anthracene","Benzo(a)pyrene","Benzo(a)pyrene TEQ (half LOR)"
         ,"Benzo(a)pyrene TEQ (LOR)","Benzo(a)pyrene TEQ (zero)","Benzo(b+j)fluoranthene","Benzo(g.h.i)perylene","Benzo(k)fluoranthene","Chrysene","Dibenz(a.h)anthracene","Fluoranthene","Fluorene"
         ,"Indeno(1.2.3.cd)pyrene","PAH Naphthalene","Phenanthrene","Pyrene","Sum of polycyclic aromatic hydrocarbons","Sodium"
+    },
+    "Stormwater": {
+        "File","Sample Date","Sample Location","Total Dissolved Solids @180°C","Calcium","Magnesium","Sodium","Potassium","Arsenic","Beryllium","Barium","Cadmium","Chromium","Cobalt","Copper","Lead","Manganese","Nickel","Selenium","Silver","Vanadium","Zinc"
+        ,"Boron","Mercury","Trivalent Chromium","Hexavalent Chromium","C10 - C14 Fraction","C15 - C28 Fraction","C29 - C36 Fraction","C10 - C36 Fraction (sum)",">C10 - C16 Fraction",">C16 - C34 Fraction",">C34 - C40 Fraction"
+        ,">C10 - C40 Fraction (sum)",">C10 - C16 Fraction minus Naphthalene (F2)","Phenol","2-Chlorophenol","2-Methylphenol","3- & 4-Methylphenol","2-Nitrophenol","2.4-Dimethylphenol","2.4-Dichlorophenol","2.6-Dichlorophenol"
+        ,"4-Chloro-3-methylphenol","2.4.6-Trichlorophenol","2.4.5-Trichlorophenol","Pentachlorophenol","Naphthalene","Acenaphthylene","Acenaphthene","Fluorene","Phenanthrene","Anthracene","Fluoranthene","Pyrene","Benz(a)anthracene"
+        ,"Chrysene","Benzo(b+j)fluoranthene","Benzo(k)fluoranthene","Benzo(a)pyrene","Indeno(1.2.3.cd)pyrene","Dibenz(a.h)anthracene","Benzo(g.h.i)perylene","Sum of polycyclic aromatic hydrocarbons","Benzo(a)pyrene TEQ (zero)"
+        ,"C6 - C9 Fraction","C6 - C10 Fraction","C6 - C10 Fraction  minus BTEX (F1)","Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes","Sum of BTEX","Naphthalene"
     }
 }
 TEST_CODES = {
@@ -93,7 +101,7 @@ TEST_CODES = {
         "C15 - C28 Fraction","C29 - C36 Fraction"
     },
     "EG020A-T": {
-       " Arsenic","Cadmium","Chromium","Copper","Lead","Nickel","Zinc","Beryllium","Boron","Cobalt","Manganese","Selenium","Vanadium"
+       "Arsenic","Cadmium","Chromium","Copper","Lead","Nickel","Zinc","Beryllium","Boron","Cobalt","Manganese","Selenium","Vanadium"
     },
     "EP080": {
         "Benzene","C6 - C10 Fraction","C6 - C10 Fraction minus BTEX (F1)","C6 - C9 Fraction","Ethylbenzene","meta- & para-Xylene","Naphthalene","ortho-Xylene","Sum of BTEX","Toluene"
@@ -193,7 +201,7 @@ TEST_CODES = {
         "Nitrite + Nitrate as N"
     },
     "EP071": {
-        ">C10 - C16 Fraction",">C10 - C16 Fraction minus Naphthalene (F2)",">C10 - C40 Fraction (sum)",">C16 - C34 Fraction",">C34 - C40 Fraction","C10 - C14 Fraction","C10 - C36 Fraction (sum)"
+        ">C10 - C16 Fraction",">C10 - C16 Fraction minus Naphthalene (F2)",">C10 - C40 Fraction (sum)",">C16 - C34 Fraction",">C34 - C40 Fraction","C10 - C14 Fraction","C10 - C36 Fraction (sum)",
         "C15 - C28 Fraction","C29 - C36 Fraction"
     },
     "EP231X (TOP)": {
@@ -270,7 +278,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             raise ValueError(f"No token found in auth response: {auth_data}")
         
         def sanitize_record(rec):
-        # """Remove '<' and '~' from all string values in a record."""
             clean = {}
             for k, v in rec.items():
                 if isinstance(v, str):
@@ -278,6 +285,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 else:
                     clean[k] = v
             return clean
+
         
         # === Step 2: Fetch ALL PAGES of data ===
         def extract_records(api_data):
