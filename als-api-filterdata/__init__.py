@@ -36,9 +36,8 @@ TABLE_FIELD_MAP = {
         ,"2-Methylphenol","2-Nitrophenol","3- & 4-Methylphenol","4-Chloro-3-methylphenol","Pentachlorophenol","Phenol","Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene"
         ,"Total Xylenes","Sum of BTEX","Naphthalene"
     },
-    "BioRemediation": {
-        "File","Sample Date","Sample Name","pH Value","Total Dissolved Solids @180°C","Nitrite + Nitrate as N","Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Phosphorus as P"
-        ,"Total Organic Carbon","Biochemical Oxygen Demand","Escherichia coli"
+    "BioRemediation Testing": {
+        "File","Sample Date","Sample Name","Moisture Content %","Nitrite + Nitrate as N (Sol.)","Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Organic Carbon","E.coli by MPN","Thermotolerant Coliforms"
     },
     "Dust Suppression": {
         "File","Sample Location","Sample Date","Arsenic","Beryllium","Cadmium","Chromium","Copper","Cobalt","Nickel","Lead","Zinc","Manganese","Selenium","Silver","Vanadium","Boron"
@@ -190,7 +189,7 @@ TEST_CODES = {
         "Total Kjeldahl Nitrogen as N"
     },
     "EK059G": {
-        "Nitrite + Nitrate as N"
+        "Nitrite + Nitrate as N", "Nitrite + Nitrate as N (Sol.)"
     },
     "EP071": {
         ">C10 - C16 Fraction",">C10 - C16 Fraction minus Naphthalene (F2)",">C10 - C40 Fraction (sum)",">C16 - C34 Fraction",">C34 - C40 Fraction","C10 - C14 Fraction","C10 - C36 Fraction (sum)"
@@ -205,6 +204,9 @@ TEST_CODES = {
         "N-Ethyl perfluorooctane sulfonamide (EtFOSA)","N-Ethyl perfluorooctane sulfonamidoethanol (EtFOSE)","N-Ethyl perfluorooctane sulfonamidoacetic acid (EtFOSAA)","6:2 Fluorotelomer sulfonic acid (6:2 FTS)"
         "10:2 Fluorotelomer sulfonic acid (10:2 FTS)","Sum of PFHxS and PFOS","Sum of TOP C4 - C14 as Fluorine"
     },
+    "MM869": {
+        "E.coli by MPN", "Thermotolerant Coliforms"
+    },
 }
 
 PROJECT_MAP = {
@@ -217,8 +219,8 @@ PROJECT_MAP = {
     "Spadable Samples": "Spadable",
     "Stormwater": "Stormwater",
     "Treated Effluent": "TreatedEffluent",
-    "BR project": "BioRemediation",
-    "BR Project": "BioRemediation"
+    "BR project": "BioRemediation Testing",
+    "BR Project": "BioRemediation Testing"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
