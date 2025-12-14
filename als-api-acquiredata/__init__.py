@@ -1,7 +1,9 @@
 import os
 import io
+import time
 import json
 import logging
+import pyodbc
 import requests
 import azure.functions as func
 from datetime import datetime, timedelta
@@ -223,7 +225,7 @@ PROJECT_MAP = {
     "BR Project": "BioRemediation Testing"
 }
 
-def main(req: func.HttpRequest) -> func.HttpResponse:
+def main(timer: func.TimerRequest) -> None:
     logging.info("Fetching and filtering lab data to generate SQL...")
 
     try:
@@ -233,11 +235,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         username = os.environ["API_USERNAME"]
         password = os.environ["API_PASSWORD"]
 
-        # === Get request parameters ===
-        project_no = req.params.get("project_no")
-        workorder_code = req.params.get("workorder_code")
-        from_days_ago = int(req.params.get("from_days_ago", 7))
-
+        # === Set parameters for timer trigger ===
+        from_days_ago = 7  # Fetch data from the last 7 days
+        
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
         from_dt = to_dt - timedelta(days=from_days_ago)
@@ -368,32 +368,72 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         # Replace old sample_records with combined data
         sample_records = all_records
-
         # === Step 3: Process data and generate SQL ===
+        # For a timer trigger, we process all fetched records without extra filtering.
         sql_statements = process_lab_json(
             sample_records,
             project_no=project_no,
             workorder_code=workorder_code
         )
 
-        # === Step 4: Return SQL file ===
-        sql_content = "\n".join(sql_statements)
-        filename = f"lab_data_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.sql"
+        def connect_with_fallback(timeout_seconds: int = 60) -> pyodbc.Connection:
+            sql_server= os.environ["SQL_SERVER"]
+            sql_database= os.environ["SQL_DB_LAB"]
+            sql_username= os.environ["SQL_USER"]
+            sql_password= os.environ["SQL_PASSWORD"]
+            """
+            Try ODBC Driver 18 then 17. Increase Connection Timeout and retry a few times
+            (useful if Azure SQL Serverless is resuming).
+            """
+            drivers = ["ODBC Driver 18 for SQL Server", "ODBC Driver 17 for SQL Server"]
+            last_exc = None
 
-        return func.HttpResponse(
-            body=sql_content,
-            mimetype="application/sql",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}"
-            }
-        )
+            for driver in drivers:
+                conn_str = (
+                    f"Driver={{{driver}}};"
+                    f"Server=tcp:{sql_server},1433;"
+                    f"Database={sql_database};"
+                    f"Uid={sql_username};"
+                    f"Pwd={sql_password};"
+                    "Encrypt=yes;"
+                    "TrustServerCertificate=no;"
+                    f"Connection Timeout={timeout_seconds};"
+                )
+                for attempt in range(3):
+                    try:
+                        return pyodbc.connect(conn_str)
+                    except Exception as e:
+                        last_exc = e
+                        logging.warning(f"Connect attempt {attempt+1}/3 with {driver} failed: {e}")
+                        time.sleep(3)
+            # If we get here, all attempts failed
+            raise last_exc
+
+        # === Step 4: Execute SQL statements ===
+        conn = None
+        cursor = None
+        try:
+            conn = connect_with_fallback(timeout_seconds=60)
+            cursor = conn.cursor()
+            
+            if not sql_statements:
+                logging.info("No SQL statements to execute.")
+            else:
+                logging.info(f"Executing {len(sql_statements)} SQL statements...")
+                for sql in sql_statements:
+                    cursor.execute(sql)
+                conn.commit()
+                logging.info("✅ Successfully executed and committed SQL statements.")
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
+        logging.info(f"Function finished. {len(sql_statements)} records processed.")
     except Exception as e:
         logging.error(f"Error: {e}")
-        return func.HttpResponse(
-            json.dumps({"error": str(e)}),
-            mimetype="application/json",
-            status_code=500,
-        )
 
 def build_sql_insert(sample_records, project_table):
     """
