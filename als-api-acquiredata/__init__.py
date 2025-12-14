@@ -435,7 +435,9 @@ def build_sql_insert(sample_records, project_table):
         compound = rec.get("Compound")
         result = rec.get("Result")
         if compound in fields and result not in [None, ""]:
-            values[compound] = f"{result}"
+            # Normalize result value
+            clean_result = str(result).replace("~", "").replace("<", "")
+            values[compound] = f"{clean_result}"
 
     # Generate SQL
     field_list = ", ".join([f"[{f}]" for f in fields])
