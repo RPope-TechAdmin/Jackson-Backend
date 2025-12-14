@@ -237,6 +237,8 @@ def main(timer: func.TimerRequest) -> None:
 
         # === Set parameters for timer trigger ===
         from_days_ago = 7  # Fetch data from the last 7 days
+        project_no = None
+        workorder_code = None
         
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
