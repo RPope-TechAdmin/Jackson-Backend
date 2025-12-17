@@ -17,13 +17,13 @@ SQL_PASSWORD = "Rep0r7D47aD0wn"
 
 # Map HTML group ids → fully-qualified table names (include schema!)
 GROUP_TO_TABLE: Dict[str, str] = {
-    "externalds": "Jackson.Dust Suppression",     # External Analytes
+    "externalds": "[Jackson.Dust Suppression]",     # External Analytes
     "ccp": "Jackson.DML",
     "treff": "Jackson.TreatedEffluent",
     "lsfw": "Jackson.LandfillSWDischarge",
     "swall": "Jackson.Stormwater",
-    "envin": "Jackson.Environmental Creek",
-    "bior": "Jackson.BioRemediation Testing"
+    "envin": "[Jackson.Environmental Creek]",
+    "bior": "[Jackson.BioRemediation Testing]"
 }
 
 # Whitelist analyte columns per table to avoid SQL injection via column names.
