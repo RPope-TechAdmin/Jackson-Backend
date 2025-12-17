@@ -66,14 +66,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json"
         )
 
-    logging.info(f"INSERT INTO Narangba.Feedback (Name, Feedback) VALUES ('{name}', '{feedback}')")
+    logging.info(f"INSERT INTO Jackson.Feedback (Name, Feedback) VALUES ('{name}', '{feedback}')")
 
     try:
         username = os.environ["SQL_USER"]
         password = os.environ["SQL_PASSWORD"]
         server = os.environ["SQL_SERVER"]
-        db = os.environ["SQL_DB_FEEDBACK"]
-        table="[Narangba].[Feedback]"
+        db = os.environ["SQL_DB_LAB"]
+        table="[Jackson].[Feedback]"
         variables="[Name], [Feedback]"
 
         logging.info(f"Collected Information: Username = {username}, Password = {password}, Server = {server}, DB = {db}")
