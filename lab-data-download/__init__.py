@@ -29,7 +29,7 @@ GROUP_TO_TABLE: Dict[str, str] = {
 # Whitelist analyte columns per table to avoid SQL injection via column names.
 # ⚠️ 
 ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
-    "Jackson.Dust Suppression": {
+    "[Jackson.Dust Suppression]": {
         "File","Sample Location","Sample Date","Arsenic","Beryllium","Cadmium","Chromium","Copper","Cobalt","Nickel","Lead","Zinc","Manganese","Selenium","Silver","Vanadium","Boron","Mercury","Total Organic Carbon","C10 - C14 Fraction","C15 - C28 Fraction"
         ,"C29 - C36 Fraction","C10 - C36 Fraction (sum)",">C10 - C16 Fraction",">C16 - C34 Fraction",">C34 - C40 Fraction",">C10 - C40 Fraction (sum)",">C10 - C16 Fraction minus Naphthalene (F2)","Phenol","2-Chlorophenol","2-Methylphenol","3- & 4-Methylphenol"
         ,"2-Nitrophenol","2.4-Dimethylphenol","2.4-Dichlorophenol","2.6-Dichlorophenol","4-Chloro-3-methylphenol","2.4.6-Trichlorophenol","2.4.5-Trichlorophenol","Pentachlorophenol","Sum of Phenols","C6 - C9 Fraction","C6 - C10 Fraction","C6 - C10 Fraction minus BTEX (F1)"
@@ -47,7 +47,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
     },
     "Jackson.TreatedEffluent":{"pH","TDS","Nitrate","Kjeldahl","TotalN","TotalP","TOC","BOD","E. coli"
     },
-    "Jackson.Environmental Creek": {
+    "[Jackson.Environmental Creek]": {
         "File","Sample Date","Sample Location","pH","Electrical Conductivity","Total Dissolved Solids","Dissolved Oxygen","Suspended Solids (SS)","Total Organic Carbon","Dissolved Arsenic","Dissolved Cadmium","Dissolved Chromium","Dissolved Copper","Dissolved Lead","Dissolved Nickel","Dissolved Zinc","Dissolved Mercury","Arsenic","Cadmium"
         ,"Chromium","Copper","Lead","Nickel","Zinc","Mercury","Perfluorobutane sulfonic acid (PFBS)","Perfluoropentane sulfonic acid (PFPeS)","Perfluorohexane sulfonic acid (PFHxS)","Perfluoroheptane sulfonic acid (PFHpS)","Perfluorooctane sulfonic acid (PFOS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)"
         ,"Perfluoropentanoic acid (PFPeA)","Perfluorohexanoic acid (PFHxA)","Perfluoroheptanoic acid (PFHpA)","Perfluorooctanoic acid (PFOA)","Perfluorononanoic acid (PFNA)","Perfluorodecanoic acid (PFDA)","Perfluoroundecanoic acid (PFUnDA)","Perfluorododecanoic acid (PFDoDA)","Perfluorotridecanoic acid (PFTrDA)","Perfluorotetradecanoic acid (PFTeDA)"
@@ -64,10 +64,10 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
         ,"Benzo(a)pyrene","Indeno(1.2.3.cd)pyrene","Dibenz(a.h)anthracene","Benzo(g.h.i)perylene","Sum of polycyclic aromatic hydrocarbons","Benzo(a)pyrene TEQ (zero)","C6 - C9 Fraction","C6 - C10 Fraction","C6 - C10 Fraction  minus BTEX (F1)","Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes"
         ,"Sum of BTEX","Naphthalene"
     },
-    "Jackson.BioRemediation Testing": {
+    "[Jackson.BioRemediation Testing]": {
         "File","Sample Date","Sample Name","Moisture Content","Nitrite + Nitrate as N (Sol.)","Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Organic Carbon","Thermotolerant Coliforms","E.coli by MPN"
     },
-    "Jackson.Pump Well": {
+    "[Jackson.Pump Well]": {
         "File","Sample Date","Sample Name","Perfluorobutane sulfonic acid (PFBS)","Perfluoropentane sulfonic acid (PFPeS)","Perfluorohexane sulfonic acid (PFHxS)","Perfluoroheptane sulfonic acid (PFHpS)","Perfluorooctane sulfonic acid (PFOS)","Perfluorodecane sulfonic acid (PFDS)","Perfluorobutanoic acid (PFBA)","Perfluoropentanoic acid (PFPeA)"
         ,"Perfluorohexanoic acid (PFHxA)""Perfluoroheptanoic acid (PFHpA)","Perfluorooctanoic acid (PFOA)","Perfluorononanoic acid (PFNA)","Perfluorodecanoic acid (PFDA)","Perfluoroundecanoic acid (PFUnDA)","Perfluorododecanoic acid (PFDoDA)","Perfluorotridecanoic acid (PFTrDA)","Perfluorotetradecanoic acid (PFTeDA)","Perfluorooctane sulfonamide (FOSA)"
         ,"N-Methyl perfluorooctane sulfonamide (MeFOSA)","N-Ethyl perfluorooctane sulfonamide (EtFOSA)","N-Methyl perfluorooctane sulfonamidoethanol (MeFOSE)","N-Ethyl perfluorooctane sulfonamidoethanol (EtFOSE)","N-Methyl perfluorooctane sulfonamidoacetic acid (MeFOSAA)","N-Ethyl perfluorooctane sulfonamidoacetic acid (EtFOSAA)","4:2 Fluorotelomer sulfonic acid (4:2 FTS)"
