@@ -18,7 +18,7 @@ SQL_PASSWORD = "Rep0r7D47aD0wn"
 # Map HTML group ids → fully-qualified table names (include schema!)
 GROUP_TO_TABLE: Dict[str, str] = {
     "externalds": "[Jackson].[Dust Suppression]",     # External Analytes
-    "ccp": "[Jackson].[DML]",
+    "ccp": "[Jackson].[DMS]",
     "treff": "[Jackson].[TreatedEffluent]",
     "lsfw": "[Jackson].[LandfillSWDischarge]",
     "swall": "[Jackson].[Stormwater]",
@@ -38,7 +38,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
         ,"Perfluorododecanoic acid","Perfluorotridecanoic acid","Perfluorotetradecanoic acid","Perfluorooctane sulfonamide","N-Methyl perfluorooctane sulfonamide","N-Ethyl perfluorooctane sulfonamide","N-Methyl perfluorooctane sulfonamidoethanol","N-Ethyl perfluorooctane sulfonamidoethanol","N-Methyl perfluorooctane sulfonamidoacetic acid"
         ,"N-Ethyl perfluorooctane sulfonamidoacetic acid","4:2 Fluorotelomer sulfonic acid","6:2 Fluorotelomer sulfonic acid","8:2 Fluorotelomer sulfonic acid","10:2 Fluorotelomer sulfonic acid","Sum of PFAS","Sum of PFHxS and PFOS","Sum of TOP C4 - C14 Carboxylates and C4-C8 Sulfonates","Sum of TOP C4 - C14 as Fluorine","Total Organic Fluorine"
     },
-    "[Jackson].[DML]": {
+    "[Jackson].[DMS]": {
         "File","Sample Date","Sample Location","pH Value","Total Soluble Salts","Moisture Content","Extractable Boron","Calcium","Magnesium","Sodium","Potassium","Arsenic","Barium","Boron","Cadmium","Chromium","Copper","Lead","Nickel","Selenium","Silver","Vanadium","Zinc","ICP-MS Arsenic","Mercury","Hexavalent Chromium","Trivalent Chromium"
         ,"C10 - C14 Fraction","C15 - C28 Fraction","C29 - C36 Fraction","C10 - C36 Fraction (sum)",">C10 - C16 Fraction",">C16 - C34 Fraction",">C34 - C40 Fraction",">C10 - C40 Fraction (sum)",">C10 - C16 Fraction minus Naphthalene (F2)","Phenol","2-Chlorophenol","2-Methylphenol","3- & 4-Methylphenol","2-Nitrophenol"
         ,"2.4-Dimethylphenol","2.4-Dichlorophenol","2.6-Dichlorophenol","4-Chloro-3-methylphenol","2.4.6-Trichlorophenol","2.4.5-Trichlorophenol","Pentachlorophenol","PAH Naphthalene","Acenaphthylene","Acenaphthene","Fluorene","Phenanthrene","Anthracene","Fluoranthene","Pyrene","Benz(a)anthracene","Chrysene","Benzo(b+j)fluoranthene"
@@ -81,7 +81,7 @@ ID_COLUMNS = ["File","Sample Date", "Sample Location", "Sample Name"]
 # Non-analyte identifier columns you always want back
 TABLE_ID_COLUMNS: Dict[str, List[str]] = {
     "[Jackson].[Dust Suppression]": ["File","Sample Date", "Sample Location"],  # doesn’t have Sample Location
-    "[Jackson].[DML]": ["File","Sample Date", "Sample Location"],
+    "[Jackson].[DMS]": ["File","Sample Date", "Sample Location"],
     "[Jackson].[TreatedEffluent]": ["File", "Sample Date"],
     "[Jackson].[Environmental Creek]": ["File", "Sample Date", "Sample Location"],
     "[Jackson].[LandfillSWDischarge]": ["Sample Date", "DateR2"],
