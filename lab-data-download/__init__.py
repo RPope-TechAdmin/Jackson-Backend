@@ -11,7 +11,7 @@ import openpyxl
 # ========= CONFIG =========
 # Read from Function App settings (Configuration → Application settings)
 SQL_SERVER = "purenvqld.database.windows.net"
-SQL_DATABASE = "Laboratory"
+SQL_DATABASE = "LaboratoryQLD"
 SQL_USERNAME = "reportabledatadownloader"
 SQL_PASSWORD = "Rep0r7D47aD0wn"
 
