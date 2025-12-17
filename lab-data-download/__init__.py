@@ -46,7 +46,7 @@ ALLOWED_COLUMNS: Dict[str, Iterable[str]] = {
         ,"Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes","Sum of BTEX","Naphthalene"
     },
     "[Jackson].[TreatedEffluent]":{
-        "pH","TDS","Nitrate","Kjeldahl","TotalN","TotalP","TOC","BOD","E. coli"
+        "pH Value","Total Dissolved Solids @180°C","Nitrite + Nitrate as N","Total Kjeldahl Nitrogen as N","Total Nitrogen As N","Total Phosphorus As P","Total Organic Carbon","Biochemical Oxygen Demand","Escherichia coli"
     },
     "[Jackson].[Environmental Creek]": {
         "File","Sample Date","Sample Location","pH","Electrical Conductivity","Total Dissolved Solids","Dissolved Oxygen","Suspended Solids (SS)","Total Organic Carbon","Dissolved Arsenic","Dissolved Cadmium","Dissolved Chromium","Dissolved Copper","Dissolved Lead","Dissolved Nickel","Dissolved Zinc","Dissolved Mercury","Arsenic","Cadmium"
