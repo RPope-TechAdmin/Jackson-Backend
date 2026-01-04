@@ -37,7 +37,7 @@ TABLE_FIELD_MAP = {
         ,"Total Xylenes","Sum of BTEX","Naphthalene"
     },
     "BioRemediation Testing": {
-        "File","Sample Date","Sample Name","Moisture Content %","Nitrite + Nitrate as N (Sol.)","Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Organic Carbon","E.coli by MPN","Thermotolerant Coliforms"
+        "File","Sample Date","Sample Name","Moisture Content","Nitrite + Nitrate as N (Sol.)","Total Kjeldahl Nitrogen as N","Total Nitrogen as N","Total Organic Carbon","E.coli by MPN","Thermotolerant Coliforms"
     },
     "Dust Suppression": {
         "File","Sample Location","Sample Date","Arsenic","Beryllium","Cadmium","Chromium","Copper","Cobalt","Nickel","Lead","Zinc","Manganese","Selenium","Silver","Vanadium","Boron"
@@ -236,7 +236,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # === Get request parameters ===
         project_no = req.params.get("project_no")
         workorder_code = req.params.get("workorder_code")
-        from_days_ago = int(req.params.get("from_days_ago", 21))
+        from_days_ago = int(req.params.get("from_days_ago", 7))
 
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
