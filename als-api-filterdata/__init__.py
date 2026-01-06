@@ -218,6 +218,7 @@ PROJECT_MAP = {
     "SBR Irr": "Irrigation",
     "Spadable Samples": "Spadable",
     "Stormwater": "Stormwater",
+    "STORMWATER": "Stormwater",
     "Treated Effluent": "TreatedEffluent",
     "BR project": "BioRemediation Testing",
     "BR Project": "BioRemediation Testing"
