@@ -46,7 +46,13 @@ TABLE_FIELD_MAP = {
         ,"Mercury","Total Organic Carbon","C10 - C14 Fraction","C15 - C28 Fraction","C29 - C36 Fraction","C10 - C36 Fraction (sum)",">C10 - C16 Fraction",">C16 - C34 Fraction",">C34 - C40 Fraction"
         ,">C10 - C40 Fraction (sum)",">C10 - C16 Fraction minus Naphthalene (F2)","Phenol","2-Chlorophenol","2-Methylphenol","3- & 4-Methylphenol","2-Nitrophenol","2.4-Dimethylphenol","2.4-Dichlorophenol"
         ,"2.6-Dichlorophenol","4-Chloro-3-methylphenol","2.4.6-Trichlorophenol","2.4.5-Trichlorophenol","Pentachlorophenol","Sum of Phenols","C6 - C9 Fraction","C6 - C10 Fraction","C6 - C10 Fraction minus BTEX (F1)"
-        ,"Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes","Sum of BTEX","Naphthalene","Escherichia coli","Sodium","Potassium","Magnesium","Calcium"
+        ,"Benzene","Toluene","Ethylbenzene","meta- & para-Xylene","ortho-Xylene","Total Xylenes","Sum of BTEX","Naphthalene","Escherichia coli","Sodium","Potassium","Magnesium","Calcium","Perfluorobutane sulfonic acid"
+        ,"Perfluoropentane sulfonic acid","Perfluorohexane sulfonic acid","Perfluoroheptane sulfonic acid","Perfluorooctane sulfonic acid","Perfluorodecane sulfonic acid","Perfluorobutanoic acid"
+        ,"Perfluoropentanoic acid","Perfluorohexanoic acid","Perfluoroheptanoic","Perfluorooctanoic acid","Perfluorononanoic acid","Perfluorodecanoic acid","Perfluoroundecanoic acid","Perfluorododecanoic acid"
+        ,"Perfluorotridecanoic acid","Perfluorotetradecanoic acid","Perfluorooctane sulfonamide","N-Methyl perfluorooctane sulfonamide","N-Ethyl perfluorooctane sulfonamide","N-Methyl perfluorooctane sulfonamidoethanol"
+        ,"N-Ethyl perfluorooctane sulfonamidoethanol","N-Methyl perfluorooctane sulfonamidoacetic acid","N-Ethyl perfluorooctane sulfonamidoacetic acid","4:2 Fluorotelomer sulfonic acid"
+        ,"6:2 Fluorotelomer sulfonic acid","8:2 Fluorotelomer sulfonic acid","10:2 Fluorotelomer sulfonic acid","Sum of PFAS","Sum of PFHxS and PFOS","Sum of TOP C4 - C14 Carboxylates an C4-C8 Sulfonates"
+        ,"Sum of TOP C4 - C14 as Fluorine","Total Organic Fluorine"
     },
     "Environmental Creek": {
         "File","Sample Date","Sample Location","Suspended Solids (SS)","Total Organic Carbon","Arsenic","Cadmium","Chromium","Copper","Lead","Nickel","Zinc","Mercury","Perfluorobutane sulfonic acid (PFBS)"
