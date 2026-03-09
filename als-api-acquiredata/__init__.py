@@ -511,7 +511,7 @@ def process_lab_json(data, project_no=None, workorder_code=None):
         """Normalize for reliable matching."""
         if val is None:
             return ""
-        return str(val).strip().lower().replace("(", "").replace(")", "").replace("<", "").replace(">", "").replace("~", "")
+        return str(val).strip().lower().replace("(", "").replace(")", "").replace("<", "").replace("~", "")
 
     pn = norm(project_no)
     wo = norm(workorder_code)
