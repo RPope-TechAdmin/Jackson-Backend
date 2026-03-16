@@ -243,7 +243,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # === Get request parameters ===
         project_no = req.params.get("project_no")
         workorder_code = req.params.get("workorder_code")
-        from_days_ago = int(req.params.get("from_days_ago", 30))
+        from_days_ago = int(req.params.get("from_days_ago", 65))
 
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
