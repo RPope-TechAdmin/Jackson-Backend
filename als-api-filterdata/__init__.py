@@ -441,6 +441,8 @@ def build_sql_insert(sample_records, project_table):
     for rec in sample_records:
         compound = rec.get("Compound")
         result = rec.get("Result")
+        if isinstance(result, str) and "<" in result:
+            result = "NULL"
         if compound in fields and result not in [None, ""]:
             values[compound] = f"{result}"
 
