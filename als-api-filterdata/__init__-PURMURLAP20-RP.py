@@ -441,6 +441,8 @@ def build_sql_insert(sample_records, project_table):
     for rec in sample_records:
         compound = rec.get("Compound")
         result = rec.get("Result")
+        if isinstance(result, str) and "<" in result:
+            result = "NULL"
         if compound in fields and result not in [None, ""]:
             values[compound] = f"{result}"
 
@@ -468,7 +470,7 @@ def process_lab_json(data, project_no=None, workorder_code=None):
         """Normalize for reliable matching."""
         if val is None:
             return ""
-        return str(val).strip().lower().replace("(", "").replace(")", "").replace("<", "").replace(">", "").replace("~", "").replace("-", "")
+        return str(val).strip().lower().replace("(", "").replace(")", "").replace("<", "").replace(">", "").replace("~", "")
 
     pn = norm(project_no)
     wo = norm(workorder_code)
