@@ -478,7 +478,8 @@ def build_sql_insert(sample_records, project_table):
             continue
 
         clean = sanitise_result(raw_result)  # ONLY pass Result here
-
+        formatted = format_for_sql(clean)
+        logging.info(f"Compound={compound}, raw={raw_result}, clean={clean}, formatted={formatted}")
         # Skip if truly missing
         if clean in [None, ""]:
             continue
