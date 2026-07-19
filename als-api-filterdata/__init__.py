@@ -243,7 +243,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # === Get request parameters ===
         project_no = req.params.get("project_no")
         workorder_code = req.params.get("workorder_code")
-        from_days_ago = int(req.params.get("from_days_ago", 7))
+        from_days_ago = int(req.params.get("from_days_ago", 14))
 
         # Default: last 7 days, page=1
         to_dt = datetime.utcnow()
@@ -437,20 +437,35 @@ def build_sql_insert(sample_records, project_table):
             parsed_date = ""
         values["Sample Date"] = f"'{parsed_date}'"
 
-    # Fill analytes
+    def sanitise_result(result):
+    # Treat non-detects / LOR values as NULL
+        if result is None:
+            return None
+        s = str(result).strip()
+        # normalise case and spaces
+        s_lower = s.lower()
+        if (
+            "<" in s_lower or
+            "≤" in s_lower or
+            "lor" in s_lower or   # limit of reporting
+            "bdl" in s_lower or   # below detection limit
+            "nd" in s_lower       # non-detect
+        ):
+            return "NULL"
+        return s
+
     for rec in sample_records:
         compound = rec.get("Compound")
-        result = rec.get("Result")
-        if isinstance(result, str) and "<" in result:
-            result = "NULL"
+        raw_result = rec.get("Result")
+        result = sanitise_result(raw_result)
         if compound in fields and result not in [None, ""]:
             values[compound] = f"{result}"
 
-    # Generate SQL
-    field_list = ", ".join([f"[{f}]" for f in fields])
-    value_list = ", ".join([values[f] for f in fields])
-    sql = f"INSERT INTO [Jackson].[{project_table}] ({field_list}) VALUES ({value_list});"
-    return sql
+        # Generate SQL
+        field_list = ", ".join([f"[{f}]" for f in fields])
+        value_list = ", ".join([values[f] for f in fields])
+        sql = f"INSERT INTO [Jackson].[{project_table}] ({field_list}) VALUES ({value_list});"
+        return sql
 
 def process_lab_json(data, project_no=None, workorder_code=None):
     """
