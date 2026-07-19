@@ -454,12 +454,22 @@ def build_sql_insert(sample_records, project_table):
             return "NULL"
         return s
 
+    def format_for_sql(result):
+        if result == "NULL":
+            return "NULL"
+        # Try to treat numeric values as numeric
+        try:
+            float(result)
+            return result  # numeric: no quotes
+        except (ValueError, TypeError):
+            return f"'{result}'"
+
     for rec in sample_records:
         compound = rec.get("Compound")
         raw_result = rec.get("Result")
-        result = sanitise_result(raw_result)
-        if compound in fields and result not in [None, ""]:
-            values[compound] = f"{result}"
+        clean = sanitise_result(raw_result)
+        if compound in fields and clean not in [None, ""]:
+            values[compound] = format_for_sql(clean)
 
         # Generate SQL
         field_list = ", ".join([f"[{f}]" for f in fields])
