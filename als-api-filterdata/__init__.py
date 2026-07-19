@@ -437,11 +437,11 @@ def build_sql_insert(sample_records, project_table):
             parsed_date = ""
         values["Sample Date"] = f"'{parsed_date}'"
 
-    def sanitise_result(result):
+    def sanitise_result(raw_result):
     # Treat non-detects / LOR values as NULL
-        if result is None:
+        if raw_result is None:
             return None
-        s = str(result).strip()
+        s = str(raw_result).strip()
         # normalise case and spaces
         s_lower = s.lower()
         if (
@@ -454,22 +454,36 @@ def build_sql_insert(sample_records, project_table):
             return "NULL"
         return s
 
-    def format_for_sql(result):
-        if result == "NULL":
+    def format_for_sql(clean_result):
+        if clean_result is None:
             return "NULL"
-        # Try to treat numeric values as numeric
+        if clean_result == "NULL":
+            return "NULL"
+         # Try numeric first
         try:
-            float(result)
-            return result  # numeric: no quotes
+            num = float(clean_result)
+            # Preserve integer vs float formatting if you care:
+            if num.is_integer():
+                return str(int(num))
+            return str(num)
         except (ValueError, TypeError):
-            return f"'{result}'"
+            # Non-numeric, treat as text
+            return f"'{clean_result}'"
 
     for rec in sample_records:
         compound = rec.get("Compound")
         raw_result = rec.get("Result")
-        clean = sanitise_result(raw_result)
-        if compound in fields and clean not in [None, ""]:
-            values[compound] = format_for_sql(clean)
+
+        if compound not in fields:
+            continue
+
+        clean = sanitise_result(raw_result)  # ONLY pass Result here
+
+        # Skip if truly missing
+        if clean in [None, ""]:
+            continue
+
+        values[compound] = format_for_sql(clean)
 
         # Generate SQL
         field_list = ", ".join([f"[{f}]" for f in fields])
