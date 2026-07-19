@@ -447,9 +447,9 @@ def build_sql_insert(sample_records, project_table):
         if (
             "<" in s_lower or
             "≤" in s_lower or
-            "lor" in s_lower or   # limit of reporting
-            "bdl" in s_lower or   # below detection limit
-            "nd" in s_lower       # non-detect
+            ">" in s_lower or
+            "≥" in s_lower or
+            "~" in s_lower    
         ):
             return "NULL"
         return s
