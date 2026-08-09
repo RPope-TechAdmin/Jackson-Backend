@@ -87,6 +87,9 @@ TABLE_FIELD_MAP = {
         ,"3- & 4-Methylphenol","4-Chloro-3-methylphenol","Pentachlorophenol","Phenol","Acenaphthene","Acenaphthylene","Anthracene","Benz(a)anthracene","Benzo(a)pyrene","Benzo(a)pyrene TEQ (half LOR)"
         ,"Benzo(a)pyrene TEQ (LOR)","Benzo(a)pyrene TEQ (zero)","Benzo(b+j)fluoranthene","Benzo(g.h.i)perylene","Benzo(k)fluoranthene","Chrysene","Dibenz(a.h)anthracene","Fluoranthene","Fluorene"
         ,"Indeno(1.2.3.cd)pyrene","PAH Naphthalene","Phenanthrene","Pyrene","Sum of polycyclic aromatic hydrocarbons","Sodium"
+    },
+    "Landfill Stormwater": {
+        "File","Sample Date","Sample Name","Suspended Solids (SS)","Total Organic Carbon"
     }
 }
 TEST_CODES = {
@@ -227,7 +230,8 @@ PROJECT_MAP = {
     "STORMWATER": "Stormwater",
     "Treated Effluent": "TreatedEffluent",
     "BR project": "BioRemediation Testing",
-    "BR Project": "BioRemediation Testing"
+    "BR Project": "BioRemediation Testing",
+    "Stormwater LF": "Landfill Stormwater"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
