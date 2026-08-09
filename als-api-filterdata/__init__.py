@@ -90,6 +90,12 @@ TABLE_FIELD_MAP = {
     },
     "Landfill Stormwater": {
         "File","Sample Date","Sample Name","Suspended Solids (SS)","Total Organic Carbon"
+    },
+    "BioRemediation Liquid": {
+        "File", "SampleName", "SampleDate", "pH", "TDS", "Arsenic", "Beryllium", "Barium", "Cadmium", "Chromium", "Cobalt", "Copper", "Lead", "Manganese", "Nickel", "Selenium", "Vanadium", "Zinc", "Boron", "Mercury", "AmmoniaAsN", "NitriteAsN"
+        , "NitrateAsN", "NitriteNitrateAsN", "TotalKjeldahlNitrogenasN", "TotalNitrogenasN", "TotalPhosphorusasP", "ChemicalOxygenDemand", "BiochemicalOxygenDemand", "PFPrS", "PFBS", "PFPeS", "PFHxS", "PFHpS", "PFOS", "PFNS", "PFDS", "PFBA", "PFPeA"
+        , "PFHxA", "PFHpA", "PFOA", "PFNA", "PFDA", "PFUnDA", "PFDoDA", "PFTrDA", "PFTeDA", "PFHxDA", "FOSA", "MEFOSA", "ETFOSA", "MEFOSE", "ETFOSE", "MEFOSAA", "ETFOSAA", "FTS42", "FTS62", "FTS82", "FTS102", "SumPFAS", "SUMPFHxSPFOS", "SumPFASWADER"
+        , "Ecoli", "TotalOrganicCarbon"
     }
 }
 TEST_CODES = {
@@ -231,7 +237,8 @@ PROJECT_MAP = {
     "Treated Effluent": "TreatedEffluent",
     "BR project": "BioRemediation Testing",
     "BR Project": "BioRemediation Testing",
-    "Stormwater LF": "Landfill Stormwater"
+    "Stormwater LF": "Landfill Stormwater",
+    "BR - liquid": "BioRemediation Liquid"
 }
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
