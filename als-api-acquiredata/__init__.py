@@ -89,6 +89,15 @@ TABLE_FIELD_MAP = {
         ,"3- & 4-Methylphenol","4-Chloro-3-methylphenol","Pentachlorophenol","Phenol","Acenaphthene","Acenaphthylene","Anthracene","Benz(a)anthracene","Benzo(a)pyrene","Benzo(a)pyrene TEQ (half LOR)"
         ,"Benzo(a)pyrene TEQ (LOR)","Benzo(a)pyrene TEQ (zero)","Benzo(b+j)fluoranthene","Benzo(g.h.i)perylene","Benzo(k)fluoranthene","Chrysene","Dibenz(a.h)anthracene","Fluoranthene","Fluorene"
         ,"Indeno(1.2.3.cd)pyrene","PAH Naphthalene","Phenanthrene","Pyrene","Sum of polycyclic aromatic hydrocarbons","Sodium"
+    },
+    "Landfill Stormwater": {
+        "File","Sample Date","Sample Name","Suspended Solids (SS)","Total Organic Carbon"
+    },
+    "BioRemediation Liquid": {
+        "File", "SampleName", "SampleDate", "pH", "TDS", "Arsenic", "Beryllium", "Barium", "Cadmium", "Chromium", "Cobalt", "Copper", "Lead", "Manganese", "Nickel", "Selenium", "Vanadium", "Zinc", "Boron", "Mercury", "AmmoniaAsN", "NitriteAsN"
+        , "NitrateAsN", "NitriteNitrateAsN", "TotalKjeldahlNitrogenasN", "TotalNitrogenasN", "TotalPhosphorusasP", "ChemicalOxygenDemand", "BiochemicalOxygenDemand", "PFPrS", "PFBS", "PFPeS", "PFHxS", "PFHpS", "PFOS", "PFNS", "PFDS", "PFBA", "PFPeA"
+        , "PFHxA", "PFHpA", "PFOA", "PFNA", "PFDA", "PFUnDA", "PFDoDA", "PFTrDA", "PFTeDA", "PFHxDA", "FOSA", "MEFOSA", "ETFOSA", "MEFOSE", "ETFOSE", "MEFOSAA", "ETFOSAA", "FTS42", "FTS62", "FTS82", "FTS102", "SumPFAS", "SUMPFHxSPFOS", "SumPFASWADER"
+        , "Ecoli", "TotalOrganicCarbon"
     }
 }
 TEST_CODES = {
@@ -226,9 +235,12 @@ PROJECT_MAP = {
     "SBR Irr": "Irrigation",
     "Spadable Samples": "Spadable",
     "Stormwater": "Stormwater",
+    "STORMWATER": "Stormwater",
     "Treated Effluent": "TreatedEffluent",
     "BR project": "BioRemediation Testing",
-    "BR Project": "BioRemediation Testing"
+    "BR Project": "BioRemediation Testing",
+    "Stormwater LF": "Landfill Stormwater",
+    "BR - liquid": "BioRemediation Liquid"
 }
 
 def main(timer: func.TimerRequest) -> None:
